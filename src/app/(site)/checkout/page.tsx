@@ -262,7 +262,7 @@ const PAYMENT_OPTIONS: {
 export default function CheckoutPage() {
   const {
     items,
-    clear,
+    clearCart,
   } = useCart();
 
   const {
@@ -823,7 +823,7 @@ export default function CheckoutPage() {
         placedOrder
       );
 
-      clear();
+      clearCart();
 
       setStep("success");
     } catch (err) {
