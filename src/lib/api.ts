@@ -1,49 +1,94 @@
 const API_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api";
+  process.env.NEXT_PUBLIC_API_URL ??
+  "http://localhost:4000/api";
+
+/* =========================================================
+   API ERROR
+========================================================= */
 
 export class ApiError extends Error {
   status: number;
 
-  constructor(message: string, status: number) {
+  constructor(
+    message: string,
+    status: number
+  ) {
     super(message);
+
     this.status = status;
+
     this.name = "ApiError";
   }
 }
 
+/* =========================================================
+   FETCH OPTIONS
+========================================================= */
+
 type FetchOptions = {
-  method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
+  method?:
+    | "GET"
+    | "POST"
+    | "PUT"
+    | "PATCH"
+    | "DELETE";
+
   body?: unknown;
+
   token?: string | null;
+
   cache?: RequestCache;
 };
+
+/* =========================================================
+   API FETCH
+========================================================= */
 
 export async function apiFetch<T>(
   path: string,
   options: FetchOptions = {}
 ): Promise<T> {
-  const res = await fetch(`${API_URL}${path}`, {
-    method: options.method ?? "GET",
-    headers: {
-      "Content-Type": "application/json",
-      ...(options.token
-        ? {
-            Authorization: `Bearer ${options.token}`,
-          }
-        : {}),
-    },
-    body:
-      options.body !== undefined
-        ? JSON.stringify(options.body)
-        : undefined,
-    cache: options.cache ?? "no-store",
-  });
+  const res = await fetch(
+    `${API_URL}${path}`,
+    {
+      method:
+        options.method ?? "GET",
 
-  const data = await res.json().catch(() => ({}));
+      headers: {
+        "Content-Type":
+          "application/json",
+
+        ...(options.token
+          ? {
+              Authorization: `Bearer ${options.token}`,
+            }
+          : {}),
+      },
+
+      body:
+        options.body !== undefined
+          ? JSON.stringify(
+              options.body
+            )
+          : undefined,
+
+      cache:
+        options.cache ??
+        "no-store",
+    }
+  );
+
+  const data =
+    await res
+      .json()
+      .catch(() => ({}));
 
   if (!res.ok) {
     throw new ApiError(
-      data.error ?? data.message ?? "কিছু একটা সমস্যা হয়েছে",
+      data.error ??
+        data.message ??
+        "কিছু একটা সমস্যা হয়েছে",
+
       res.status
     );
   }
@@ -51,14 +96,10 @@ export async function apiFetch<T>(
   return data as T;
 }
 
-/**
- * Upload multiple images
- *
- * Backend:
- * upload.array("files", 20)
- *
- * তাই এখানে field name অবশ্যই "files" হতে হবে।
- */
+/* =========================================================
+   MULTIPLE FILE UPLOAD
+========================================================= */
+
 export async function uploadFiles(
   path: string,
   files: File[],
@@ -68,39 +109,69 @@ export async function uploadFiles(
   message: string;
   urls: string[];
 }> {
-  if (!files || files.length === 0) {
-    throw new ApiError("কোনো ছবি নির্বাচন করা হয়নি", 400);
+  if (
+    !files ||
+    files.length === 0
+  ) {
+    throw new ApiError(
+      "কোনো ছবি নির্বাচন করা হয়নি",
+      400
+    );
   }
 
-  if (files.length > 20) {
-    throw new ApiError("একসাথে সর্বোচ্চ 20টি ছবি আপলোড করা যাবে", 400);
+  if (
+    files.length > 20
+  ) {
+    throw new ApiError(
+      "একসাথে সর্বোচ্চ 20টি ছবি আপলোড করা যাবে",
+      400
+    );
   }
 
-  const formData = new FormData();
+  const formData =
+    new FormData();
 
-  for (const file of files) {
-    formData.append("files", file);
+  for (
+    const file of files
+  ) {
+    formData.append(
+      "files",
+      file
+    );
   }
 
-  const res = await fetch(`${API_URL}${path}`, {
-    method: "POST",
+  const res = await fetch(
+    `${API_URL}${path}`,
+    {
+      method: "POST",
 
-    headers: token
-      ? {
-          Authorization: `Bearer ${token}`,
-        }
-      : undefined,
+      headers: token
+        ? {
+            Authorization:
+              `Bearer ${token}`,
+          }
+        : undefined,
 
-    // এখানে Content-Type দিবে না।
-    // Browser নিজে multipart/form-data boundary তৈরি করবে।
-    body: formData,
-  });
+      /*
+       * Do NOT set Content-Type.
+       * Browser will automatically
+       * add multipart boundary.
+       */
+      body: formData,
+    }
+  );
 
-  const data = await res.json().catch(() => ({}));
+  const data =
+    await res
+      .json()
+      .catch(() => ({}));
 
   if (!res.ok) {
     throw new ApiError(
-      data.error ?? data.message ?? "ছবি আপলোড ব্যর্থ হয়েছে",
+      data.error ??
+        data.message ??
+        "ছবি আপলোড ব্যর্থ হয়েছে",
+
       res.status
     );
   }
@@ -108,11 +179,10 @@ export async function uploadFiles(
   return data;
 }
 
-/**
- * Single file upload
- *
- * দরকার হলে এটাও রাখা হলো।
- */
+/* =========================================================
+   SINGLE FILE UPLOAD
+========================================================= */
+
 export async function uploadFile(
   path: string,
   file: File,
@@ -122,8 +192,16 @@ export async function uploadFile(
   message: string;
   urls: string[];
 }> {
-  return uploadFiles(path, [file], token);
+  return uploadFiles(
+    path,
+    [file],
+    token
+  );
 }
+
+/* =========================================================
+   DOWNLOAD INVOICE
+========================================================= */
 
 export async function downloadMyInvoice(
   orderId: string,
@@ -134,7 +212,8 @@ export async function downloadMyInvoice(
     `${API_URL}/orders/${orderId}/invoice`,
     {
       headers: {
-        Authorization: `Bearer ${token}`,
+        Authorization:
+          `Bearer ${token}`,
       },
     }
   );
@@ -146,31 +225,50 @@ export async function downloadMyInvoice(
     );
   }
 
-  const blob = await res.blob();
+  const blob =
+    await res.blob();
 
-  const url = URL.createObjectURL(blob);
+  const url =
+    URL.createObjectURL(
+      blob
+    );
 
-  const link = document.createElement("a");
+  const link =
+    document.createElement(
+      "a"
+    );
 
   link.href = url;
-  link.download = filename;
 
-  document.body.appendChild(link);
+  link.download =
+    filename;
+
+  document.body.appendChild(
+    link
+  );
+
   link.click();
 
   link.remove();
 
-  URL.revokeObjectURL(url);
+  URL.revokeObjectURL(
+    url
+  );
 }
+
+/* =========================================================
+   PUBLIC INVOICE URL
+========================================================= */
 
 export function publicInvoiceUrl(
   orderNumber: string,
   phone: string
 ): string {
-  const params = new URLSearchParams({
-    orderNumber,
-    phone,
-  });
+  const params =
+    new URLSearchParams({
+      orderNumber,
+      phone,
+    });
 
   return `${API_URL}/orders/track/invoice?${params.toString()}`;
 }
