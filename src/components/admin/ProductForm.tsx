@@ -6,8 +6,8 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import {
   apiFetch,
-  uploadFile,
   ApiError,
+  uploadFiles,
 } from "@/lib/api";
 
 import { formatBDT } from "@/lib/format";
@@ -163,49 +163,74 @@ export function ProductForm({
       e.target.files ?? []
     );
 
-    if (
-      files.length === 0 ||
-      !token
-    ) {
+    if (files.length === 0) {
+      return;
+    }
+
+    if (!token) {
+      setError(
+        "আপনি লগইন করেননি। আবার লগইন করুন।"
+      );
       return;
     }
 
     setError("");
+
+    const totalImages =
+      form.images.length + files.length;
+
+    if (totalImages > 20) {
+      setError(
+        "একটি প্রোডাক্টে সর্বোচ্চ ২০টি ছবি রাখা যাবে।"
+      );
+
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+
+      return;
+    }
+
     setUploading(true);
 
     try {
-      const uploadedUrls: string[] = [];
+      const result = await uploadFiles(
+        "/uploads/admin",
+        files,
+        token
+      );
 
-      /*
-       * Upload all selected images
-       */
-      for (const file of files) {
-        const { url } =
-          await uploadFile(
-            "/uploads/admin",
-            file,
-            token
-          );
-
-        uploadedUrls.push(url);
+      if (
+        !result.success ||
+        !result.urls ||
+        result.urls.length === 0
+      ) {
+        throw new ApiError(
+          "Supabase থেকে কোনো image URL পাওয়া যায়নি।",
+          500
+        );
       }
 
-      /*
-       * Add all uploaded images
-       */
       setForm((current) => ({
         ...current,
 
         images: [
           ...current.images,
-          ...uploadedUrls,
+          ...result.urls,
         ],
       }));
     } catch (err) {
+      console.error(
+        "IMAGE UPLOAD ERROR:",
+        err
+      );
+
       setError(
         err instanceof ApiError
           ? err.message
-          : "ছবি আপলোড ব্যর্থ হয়েছে"
+          : err instanceof Error
+            ? err.message
+            : "ছবি আপলোড ব্যর্থ হয়েছে"
       );
     } finally {
       setUploading(false);
@@ -273,12 +298,12 @@ export function ProductForm({
 
         sizes: exists
           ? current.sizes.filter(
-              (item) => item !== size
-            )
+            (item) => item !== size
+          )
           : [
-              ...current.sizes,
-              size,
-            ],
+            ...current.sizes,
+            size,
+          ],
       };
     });
   }
@@ -300,11 +325,11 @@ export function ProductForm({
   const finalPrice =
     discountPercentNum != null
       ? Math.round(
-          priceNum -
-            (priceNum *
-              discountPercentNum) /
-              100
-        )
+        priceNum -
+        (priceNum *
+          discountPercentNum) /
+        100
+      )
       : priceNum;
 
   /*
@@ -553,18 +578,16 @@ export function ProductForm({
             (url, index) => (
               <div
                 key={`${url}-${index}`}
-                className={`group relative aspect-square overflow-hidden rounded-xl border bg-gray-50 ${
-                  index === 0
+                className={`group relative aspect-square overflow-hidden rounded-xl border bg-gray-50 ${index === 0
                     ? "border-brand-500 ring-2 ring-brand-500/20"
                     : "border-gray-200"
-                }`}
+                  }`}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={url}
-                  alt={`Product image ${
-                    index + 1
-                  }`}
+                  alt={`Product image ${index + 1
+                    }`}
                   className="h-full w-full object-cover"
                 />
 
@@ -603,11 +626,10 @@ export function ProductForm({
           {/* MULTIPLE UPLOAD */}
 
           <label
-            className={`flex aspect-square flex-col items-center justify-center rounded-xl border-2 border-dashed transition ${
-              uploading
+            className={`flex aspect-square flex-col items-center justify-center rounded-xl border-2 border-dashed transition ${uploading
                 ? "cursor-not-allowed border-gray-200 bg-gray-50 text-gray-400"
                 : "cursor-pointer border-gray-300 text-gray-400 hover:border-brand-500 hover:bg-brand-50 hover:text-brand-600"
-            }`}
+              }`}
           >
             {uploading ? (
               <>
@@ -705,9 +727,9 @@ export function ProductForm({
           null &&
           priceNum > 0 &&
           discountPercentNum >=
-            0 &&
+          0 &&
           discountPercentNum <=
-            100 && (
+          100 && (
             <div className="mt-4 rounded-lg bg-gray-50 p-4">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-500">
@@ -753,11 +775,10 @@ export function ProductForm({
                     isInStock: true,
                   })
                 }
-                className={`rounded-lg border px-4 py-3 text-sm font-semibold transition ${
-                  form.isInStock
+                className={`rounded-lg border px-4 py-3 text-sm font-semibold transition ${form.isInStock
                     ? "border-green-500 bg-green-50 text-green-700"
                     : "border-gray-200 bg-white text-gray-500"
-                }`}
+                  }`}
               >
                 ✓ আছে
               </button>
@@ -770,11 +791,10 @@ export function ProductForm({
                     isInStock: false,
                   })
                 }
-                className={`rounded-lg border px-4 py-3 text-sm font-semibold transition ${
-                  !form.isInStock
+                className={`rounded-lg border px-4 py-3 text-sm font-semibold transition ${!form.isInStock
                     ? "border-red-500 bg-red-50 text-red-700"
                     : "border-gray-200 bg-white text-gray-500"
-                }`}
+                  }`}
               >
                 ✕ নেই
               </button>
@@ -838,11 +858,10 @@ export function ProductForm({
                   onClick={() =>
                     toggleSize(size)
                   }
-                  className={`min-w-[58px] rounded-lg border px-4 py-2.5 text-sm font-semibold transition ${
-                    selected
+                  className={`min-w-[58px] rounded-lg border px-4 py-2.5 text-sm font-semibold transition ${selected
                       ? "border-brand-500 bg-brand-500 text-white shadow-sm"
                       : "border-gray-200 bg-white text-gray-700 hover:border-brand-400 hover:bg-brand-50"
-                  }`}
+                    }`}
                 >
                   {size}
                 </button>

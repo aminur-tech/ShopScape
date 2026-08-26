@@ -1,10 +1,13 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api";
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api";
 
 export class ApiError extends Error {
   status: number;
+
   constructor(message: string, status: number) {
     super(message);
     this.status = status;
+    this.name = "ApiError";
   }
 }
 
@@ -15,69 +18,159 @@ type FetchOptions = {
   cache?: RequestCache;
 };
 
-export async function apiFetch<T>(path: string, options: FetchOptions = {}): Promise<T> {
+export async function apiFetch<T>(
+  path: string,
+  options: FetchOptions = {}
+): Promise<T> {
   const res = await fetch(`${API_URL}${path}`, {
     method: options.method ?? "GET",
     headers: {
       "Content-Type": "application/json",
-      ...(options.token ? { Authorization: `Bearer ${options.token}` } : {}),
+      ...(options.token
+        ? {
+            Authorization: `Bearer ${options.token}`,
+          }
+        : {}),
     },
-    body: options.body ? JSON.stringify(options.body) : undefined,
+    body:
+      options.body !== undefined
+        ? JSON.stringify(options.body)
+        : undefined,
     cache: options.cache ?? "no-store",
   });
 
   const data = await res.json().catch(() => ({}));
 
   if (!res.ok) {
-    throw new ApiError(data.error ?? "কিছু একটা সমস্যা হয়েছে", res.status);
+    throw new ApiError(
+      data.error ?? data.message ?? "কিছু একটা সমস্যা হয়েছে",
+      res.status
+    );
   }
 
   return data as T;
 }
 
-// Multipart upload for images (product/banner images via /uploads/admin,
-// payment-proof screenshots via /uploads/payment-proof). Deliberately
-// separate from apiFetch since it must NOT set a JSON Content-Type header -
-// the browser needs to set the multipart boundary itself.
-export async function uploadFile(path: string, file: File, token?: string | null): Promise<{ url: string }> {
-  const form = new FormData();
-  form.append("file", file);
+/**
+ * Upload multiple images
+ *
+ * Backend:
+ * upload.array("files", 20)
+ *
+ * তাই এখানে field name অবশ্যই "files" হতে হবে।
+ */
+export async function uploadFiles(
+  path: string,
+  files: File[],
+  token?: string | null
+): Promise<{
+  success: boolean;
+  message: string;
+  urls: string[];
+}> {
+  if (!files || files.length === 0) {
+    throw new ApiError("কোনো ছবি নির্বাচন করা হয়নি", 400);
+  }
+
+  if (files.length > 20) {
+    throw new ApiError("একসাথে সর্বোচ্চ 20টি ছবি আপলোড করা যাবে", 400);
+  }
+
+  const formData = new FormData();
+
+  for (const file of files) {
+    formData.append("files", file);
+  }
 
   const res = await fetch(`${API_URL}${path}`, {
     method: "POST",
-    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-    body: form,
+
+    headers: token
+      ? {
+          Authorization: `Bearer ${token}`,
+        }
+      : undefined,
+
+    // এখানে Content-Type দিবে না।
+    // Browser নিজে multipart/form-data boundary তৈরি করবে।
+    body: formData,
   });
 
   const data = await res.json().catch(() => ({}));
 
   if (!res.ok) {
-    throw new ApiError(data.error ?? "আপলোড ব্যর্থ হয়েছে", res.status);
+    throw new ApiError(
+      data.error ?? data.message ?? "ছবি আপলোড ব্যর্থ হয়েছে",
+      res.status
+    );
   }
 
-  return data as { url: string };
+  return data;
 }
 
-// The customer invoice endpoint requires an Authorization header, which a
-// plain <a href> can't send - so we fetch it as a blob and trigger the
-// browser's download UI manually.
-export async function downloadMyInvoice(orderId: string, token: string, filename: string) {
-  const res = await fetch(`${API_URL}/orders/${orderId}/invoice`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (!res.ok) throw new ApiError("ইনভয়েস ডাউনলোড করতে সমস্যা হয়েছে", res.status);
+/**
+ * Single file upload
+ *
+ * দরকার হলে এটাও রাখা হলো।
+ */
+export async function uploadFile(
+  path: string,
+  file: File,
+  token?: string | null
+): Promise<{
+  success: boolean;
+  message: string;
+  urls: string[];
+}> {
+  return uploadFiles(path, [file], token);
+}
+
+export async function downloadMyInvoice(
+  orderId: string,
+  token: string,
+  filename: string
+) {
+  const res = await fetch(
+    `${API_URL}/orders/${orderId}/invoice`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  if (!res.ok) {
+    throw new ApiError(
+      "ইনভয়েস ডাউনলোড করতে সমস্যা হয়েছে",
+      res.status
+    );
+  }
+
   const blob = await res.blob();
+
   const url = URL.createObjectURL(blob);
+
   const link = document.createElement("a");
+
   link.href = url;
   link.download = filename;
+
+  document.body.appendChild(link);
   link.click();
+
+  link.remove();
+
   URL.revokeObjectURL(url);
 }
 
-// The guest/public tracking invoice endpoint needs no auth (it's gated by
-// orderNumber+phone instead), so a plain link works fine here.
-export function publicInvoiceUrl(orderNumber: string, phone: string): string {
-  const params = new URLSearchParams({ orderNumber, phone });
+export function publicInvoiceUrl(
+  orderNumber: string,
+  phone: string
+): string {
+  const params = new URLSearchParams({
+    orderNumber,
+    phone,
+  });
+
   return `${API_URL}/orders/track/invoice?${params.toString()}`;
 }
