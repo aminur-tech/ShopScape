@@ -5,8 +5,6 @@ export type Category = {
   image?: string | null;
 };
 
-
-
 export type Product = {
   id: string;
   name: string;
@@ -21,7 +19,6 @@ export type Product = {
 
   sizeChart?: string | null;
 
-  // Product-level sizes
   sizes: string[];
 
   // 0 = out of stock
@@ -31,8 +28,6 @@ export type Product = {
   images: string[];
 
   isFeatured: boolean;
-
-  // এখানে optional রাখার দরকার নেই
   isActive: boolean;
 
   categoryId?: string;
@@ -55,11 +50,13 @@ export type Banner = {
 export type OrderItem = {
   id: string;
   productId: string;
+
   name: string;
   price: number;
   quantity: number;
-  selectedSize?: string | null;
+
   selectedColor?: string | null;
+  selectedSize?: string | null;
   selectedImageUrl?: string | null;
 };
 
@@ -71,18 +68,42 @@ export type OrderStatus =
   | "DELIVERED"
   | "CANCELLED";
 
-export type PaymentMethod = "COD" | "BKASH" | "NAGAD";
+export type PaymentMethod =
+  | "COD"
+  | "BKASH"
+  | "NAGAD";
 
 export type Order = {
   id: string;
   orderNumber: string;
+
   status: OrderStatus;
+
   paymentMethod: PaymentMethod | string;
+
   transactionId?: string | null;
   paymentProofUrl?: string | null;
 
+  courierTrackingUrl?: string | null;
+
+  /**
+   * Optional admin/customer communication.
+   * Requires backend/database support.
+   */
+  adminMessage?: string | null;
+
+  /**
+   * Whether this customer/order needs
+   * delivery-charge confirmation because
+   * of a previous return.
+   *
+   * Requires backend/database support.
+   */
+  returnConfirmationRequired?: boolean;
+
   fullName: string;
   phone: string;
+
   division: string;
   district: string;
   area: string;
@@ -95,6 +116,7 @@ export type Order = {
   items: OrderItem[];
 
   createdAt: string;
+  updatedAt?: string;
 };
 
 export type User = {
@@ -106,14 +128,10 @@ export type User = {
 };
 
 export type CartLine = {
-  /**
-   * Unique cart line ID.
-   * Same product with different color/size
-   * must become different cart lines.
-   */
   cartLineId: string;
 
   productId: string;
+
   name: string;
   price: number;
 
