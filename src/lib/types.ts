@@ -1,9 +1,17 @@
+
 export type Category = {
   id: string;
   name: string;
   slug: string;
   image?: string | null;
+  parentId?: string | null;
+  children?: Category[];
+  _count?: {
+    products?: number;
+  };
 };
+
+
 
 export type Product = {
   id: string;
@@ -33,8 +41,10 @@ export type Product = {
   categoryId?: string;
 
   category?: {
+    id?: string;
     name: string;
     slug: string;
+    parentId?: string | null;
   };
 };
 
@@ -73,6 +83,15 @@ export type PaymentMethod =
   | "BKASH"
   | "NAGAD";
 
+export type DeliveryPaymentMethod =
+  | "BKASH"
+  | "NAGAD";
+
+export type DeliveryPaymentStatus =
+  | "UNPAID"
+  | "PENDING"
+  | "PAID";
+
 export type Order = {
   id: string;
   orderNumber: string;
@@ -84,22 +103,48 @@ export type Order = {
   transactionId?: string | null;
   paymentProofUrl?: string | null;
 
+  /* =========================================================
+     Courier
+  ========================================================= */
+
+  courierName?: string | null;
   courierTrackingUrl?: string | null;
 
-  /**
-   * Optional admin/customer communication.
-   * Requires backend/database support.
-   */
+  /* =========================================================
+     Admin / Customer Communication
+  ========================================================= */
+
   adminMessage?: string | null;
 
-  /**
-   * Whether this customer/order needs
-   * delivery-charge confirmation because
-   * of a previous return.
-   *
-   * Requires backend/database support.
-   */
+  /* =========================================================
+     Previous Return Protection
+  ========================================================= */
+
+  returnRequired?: boolean;
+
   returnConfirmationRequired?: boolean;
+
+  /* =========================================================
+     Delivery Payment
+  ========================================================= */
+
+  deliveryPaymentRequired?: boolean;
+
+  deliveryPaymentMethod?: DeliveryPaymentMethod | string | null;
+
+  deliveryPaymentStatus?: DeliveryPaymentStatus | string | null;
+
+  deliveryTransactionId?: string | null;
+
+  deliveryPaymentProofUrl?: string | null;
+
+  /* =========================================================
+     Customer
+  ========================================================= */
+
+  userId?: string | null;
+
+  guestEmail?: string | null;
 
   fullName: string;
   phone: string;
@@ -109,11 +154,23 @@ export type Order = {
   area: string;
   addressLine: string;
 
+  /* =========================================================
+     Pricing
+  ========================================================= */
+
   subtotal: number;
   deliveryFee: number;
   total: number;
 
+  /* =========================================================
+     Items
+  ========================================================= */
+
   items: OrderItem[];
+
+  /* =========================================================
+     Timestamps
+  ========================================================= */
 
   createdAt: string;
   updatedAt?: string;
