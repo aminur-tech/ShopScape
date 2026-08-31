@@ -1,17 +1,26 @@
+import type { ReactNode } from "react";
 import type { Metadata } from "next";
-import { Providers } from "./providers";
+
 import "./globals.css";
+
+import { Providers } from "./providers";
 
 export const metadata: Metadata = {
   title: "ShopScape",
-  description: "সারা বাংলাদেশে হোম ডেলিভারি - ক্যাশ অন ডেলিভারি",
+  description: "ShopScape Online Store",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: ReactNode;
+}) {
   return (
     <html lang="bn">
-      <body className="font-sans antialiased bg-white text-[15px]">
-        <Providers>{children}</Providers>
+      <body>
+        <Providers>
+          {children}
+        </Providers>
       </body>
     </html>
   );

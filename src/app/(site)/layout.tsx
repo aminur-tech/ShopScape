@@ -10,15 +10,15 @@ export default function SiteLayout({
 }) {
   return (
     <div className="flex min-h-screen flex-col">
-      {/* STICKY HEADER AREA */}
-      <div className="sticky top-0 z-50">
+      {/* STICKY HEADER */}
+      <header className="sticky top-0 z-50">
         <TopBar />
         <Header />
         <CategoryNav />
-      </div>
+      </header>
 
-      {/* PAGE CONTENT */}
-      <main className="flex-1 container-page py-6">
+      {/* CONTENT */}
+      <main className="container-page flex-1 py-6">
         {children}
       </main>
 
