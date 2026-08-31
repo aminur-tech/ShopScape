@@ -2,16 +2,49 @@
 
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 
 import { useAuth } from "@/lib/auth-context";
 import { useCart } from "@/lib/cart-context";
 
 /* -------------------------------------------------------------------------- */
-/* Component                                                                  */
+/* Header                                                                     */
 /* -------------------------------------------------------------------------- */
 
 export function Header() {
+  return (
+    <Suspense fallback={<HeaderFallback />}>
+      <HeaderContent />
+    </Suspense>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Header Fallback                                                            */
+/* -------------------------------------------------------------------------- */
+
+function HeaderFallback() {
+  return (
+    <header className="sticky top-0 z-50 border-b border-gray-100 bg-white/95 backdrop-blur">
+      <div className="container-page">
+        <div className="flex h-16 items-center sm:h-[72px]">
+          <Link
+            href="/"
+            className="text-xl font-extrabold tracking-tight text-brand-600 sm:text-2xl"
+          >
+            Shop<span className="text-gray-900">Scape</span>
+          </Link>
+        </div>
+      </div>
+    </header>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Header Content                                                             */
+/* -------------------------------------------------------------------------- */
+
+function HeaderContent() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -45,10 +78,12 @@ export function Header() {
   /* ------------------------------------------------------------------------ */
 
   function isActive(href: string) {
+    /* Home */
     if (href === "/") {
       return pathname === "/";
     }
 
+    /* Products */
     if (href === "/products") {
       return (
         pathname === "/products" &&
@@ -56,6 +91,7 @@ export function Header() {
       );
     }
 
+    /* Featured / Offers */
     if (href === "/products?featured=true") {
       return (
         pathname === "/products" &&
@@ -63,6 +99,7 @@ export function Header() {
       );
     }
 
+    /* Wishlist */
     if (href === "/account?tab=wishlist") {
       return (
         pathname === "/account" &&
@@ -70,6 +107,7 @@ export function Header() {
       );
     }
 
+    /* Account */
     if (href === "/account") {
       return (
         pathname === "/account" &&
@@ -77,11 +115,12 @@ export function Header() {
       );
     }
 
+    /* Normal routes */
     return pathname.startsWith(href);
   }
 
   /* ------------------------------------------------------------------------ */
-  /* Mobile Menu Item                                                         */
+  /* Mobile Menu Item Class                                                   */
   /* ------------------------------------------------------------------------ */
 
   function mobileItemClass(active: boolean) {
@@ -110,20 +149,18 @@ export function Header() {
   return (
     <header className="sticky top-0 z-50 border-b border-gray-100 bg-white/95 backdrop-blur">
       <div className="container-page">
+
         {/* ================================================================== */}
         {/* TOP HEADER                                                         */}
         {/* ================================================================== */}
 
         <div className="flex h-16 items-center gap-3 sm:h-[72px] sm:gap-6">
-          {/* ---------------------------------------------------------------- */}
-          {/* Mobile Menu Button                                               */}
-          {/* ---------------------------------------------------------------- */}
+
+          {/* MOBILE MENU BUTTON */}
 
           <button
             type="button"
-            onClick={() =>
-              setMenuOpen((prev) => !prev)
-            }
+            onClick={() => setMenuOpen((prev) => !prev)}
             aria-label={
               menuOpen
                 ? "মেনু বন্ধ করুন"
@@ -175,9 +212,7 @@ export function Header() {
             )}
           </button>
 
-          {/* ---------------------------------------------------------------- */}
-          {/* Logo                                                             */}
-          {/* ---------------------------------------------------------------- */}
+          {/* LOGO */}
 
           <Link
             href="/"
@@ -197,9 +232,7 @@ export function Header() {
             </span>
           </Link>
 
-          {/* ---------------------------------------------------------------- */}
-          {/* Desktop Search                                                   */}
-          {/* ---------------------------------------------------------------- */}
+          {/* DESKTOP SEARCH */}
 
           <form
             onSubmit={handleSearch}
@@ -212,6 +245,7 @@ export function Header() {
             "
           >
             <div className="relative w-full">
+
               <svg
                 className="
                   pointer-events-none
@@ -282,9 +316,7 @@ export function Header() {
             </button>
           </form>
 
-          {/* ---------------------------------------------------------------- */}
-          {/* Header Actions                                                   */}
-          {/* ---------------------------------------------------------------- */}
+          {/* ACTIONS */}
 
           <nav
             aria-label="প্রধান অ্যাকশন"
@@ -296,7 +328,8 @@ export function Header() {
               sm:gap-2
             "
           >
-            {/* OFFERS */}
+
+            {/* OFFER */}
 
             <Link
               href="/products?featured=true"
@@ -311,9 +344,7 @@ export function Header() {
                 rounded-xl
                 transition
                 ${
-                  isActive(
-                    "/products?featured=true",
-                  )
+                  isActive("/products?featured=true")
                     ? "bg-brand-50 text-brand-600"
                     : "text-gray-600 hover:bg-brand-50 hover:text-brand-600"
                 }
@@ -350,9 +381,7 @@ export function Header() {
                 transition
                 sm:flex
                 ${
-                  isActive(
-                    "/account?tab=wishlist",
-                  )
+                  isActive("/account?tab=wishlist")
                     ? "bg-red-50 text-red-500"
                     : "text-gray-600 hover:bg-red-50 hover:text-red-500"
                 }
@@ -479,7 +508,7 @@ export function Header() {
         </div>
 
         {/* ================================================================== */}
-        {/* MOBILE SEARCH                                                       */}
+        {/* MOBILE SEARCH                                                      */}
         {/* ================================================================== */}
 
         <form
@@ -487,6 +516,7 @@ export function Header() {
           className="pb-3 md:hidden"
         >
           <div className="relative">
+
             <svg
               className="
                 pointer-events-none
@@ -565,27 +595,18 @@ export function Header() {
         {/* ================================================================== */}
 
         {menuOpen && (
-          <div
-            className="
-              border-t
-              border-gray-100
-              py-3
-              sm:hidden
-            "
-          >
+          <div className="border-t border-gray-100 py-3 sm:hidden">
+
             <nav
               aria-label="মোবাইল মেনু"
               className="grid gap-1"
             >
-              {/* ------------------------------------------------------------ */}
-              {/* Home                                                         */}
-              {/* ------------------------------------------------------------ */}
+
+              {/* HOME */}
 
               <Link
                 href="/"
-                onClick={() =>
-                  setMenuOpen(false)
-                }
+                onClick={() => setMenuOpen(false)}
                 aria-current={
                   isActive("/")
                     ? "page"
@@ -602,15 +623,11 @@ export function Header() {
                 )}
               </Link>
 
-              {/* ------------------------------------------------------------ */}
-              {/* All Products                                                 */}
-              {/* ------------------------------------------------------------ */}
+              {/* PRODUCTS */}
 
               <Link
                 href="/products"
-                onClick={() =>
-                  setMenuOpen(false)
-                }
+                onClick={() => setMenuOpen(false)}
                 aria-current={
                   isActive("/products")
                     ? "page"
@@ -627,15 +644,11 @@ export function Header() {
                 )}
               </Link>
 
-              {/* ------------------------------------------------------------ */}
-              {/* Offers                                                       */}
-              {/* ------------------------------------------------------------ */}
+              {/* OFFERS */}
 
               <Link
                 href="/products?featured=true"
-                onClick={() =>
-                  setMenuOpen(false)
-                }
+                onClick={() => setMenuOpen(false)}
                 aria-current={
                   isActive(
                     "/products?featured=true",
@@ -658,15 +671,11 @@ export function Header() {
                 )}
               </Link>
 
-              {/* ------------------------------------------------------------ */}
-              {/* Wishlist                                                     */}
-              {/* ------------------------------------------------------------ */}
+              {/* WISHLIST */}
 
               <Link
                 href="/account?tab=wishlist"
-                onClick={() =>
-                  setMenuOpen(false)
-                }
+                onClick={() => setMenuOpen(false)}
                 aria-current={
                   isActive(
                     "/account?tab=wishlist",
@@ -680,9 +689,7 @@ export function Header() {
                   ),
                 )}
               >
-                <span>
-                  পছন্দের তালিকা
-                </span>
+                <span>পছন্দের তালিকা</span>
 
                 {isActive(
                   "/account?tab=wishlist",
@@ -691,9 +698,7 @@ export function Header() {
                 )}
               </Link>
 
-              {/* ------------------------------------------------------------ */}
-              {/* Account / Login                                              */}
-              {/* ------------------------------------------------------------ */}
+              {/* ACCOUNT / LOGIN */}
 
               <Link
                 href={
@@ -701,9 +706,7 @@ export function Header() {
                     ? "/account"
                     : "/login"
                 }
-                onClick={() =>
-                  setMenuOpen(false)
-                }
+                onClick={() => setMenuOpen(false)}
                 aria-current={
                   isActive(
                     user
@@ -736,29 +739,21 @@ export function Header() {
                 )}
               </Link>
 
-              {/* ------------------------------------------------------------ */}
-              {/* Track Order                                                  */}
-              {/* ------------------------------------------------------------ */}
+              {/* TRACK ORDER */}
 
               <Link
                 href="/track-order"
-                onClick={() =>
-                  setMenuOpen(false)
-                }
+                onClick={() => setMenuOpen(false)}
                 aria-current={
                   isActive("/track-order")
                     ? "page"
                     : undefined
                 }
                 className={mobileItemClass(
-                  isActive(
-                    "/track-order",
-                  ),
+                  isActive("/track-order"),
                 )}
               >
-                <span>
-                  অর্ডার ট্র্যাকিং
-                </span>
+                <span>অর্ডার ট্র্যাকিং</span>
 
                 {isActive(
                   "/track-order",
@@ -766,6 +761,7 @@ export function Header() {
                   <ActiveIndicator />
                 )}
               </Link>
+
             </nav>
           </div>
         )}
