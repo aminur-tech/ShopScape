@@ -149,9 +149,7 @@ export default async function CategoryPage({
       {/* Sidebar                                                             */}
       {/* ================================================================== */}
 
-      <CategorySidebar
-        currentSlug={slug}
-      />
+     
 
       {/* ================================================================== */}
       {/* Main Content                                                        */}
