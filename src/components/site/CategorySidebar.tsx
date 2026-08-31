@@ -1,9 +1,7 @@
-
 "use client";
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
 
 import { apiFetch } from "@/lib/api";
 import type { Category } from "@/lib/types";
@@ -14,110 +12,34 @@ import type { Category } from "@/lib/types";
 
 type CategoryWithChildren = Category & {
   children?: CategoryWithChildren[];
+
   _count?: {
     products?: number;
   };
 };
 
-/* -------------------------------------------------------------------------- */
-/* Icons                                                                      */
-/* -------------------------------------------------------------------------- */
-
-function ChevronIcon({
-  className = "",
-}: {
-  className?: string;
-}) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 20 20"
-      fill="none"
-      className={className}
-      aria-hidden="true"
-    >
-      <path
-        d="M7.5 4.5L13 10L7.5 15.5"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function GridIcon({
-  className = "",
-}: {
-  className?: string;
-}) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 20 20"
-      fill="none"
-      className={className}
-      aria-hidden="true"
-    >
-      <path
-        d="M4 4H8V8H4V4ZM12 4H16V8H12V4ZM4 12H8V16H4V12ZM12 12H16V16H12V12Z"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-/* -------------------------------------------------------------------------- */
-/* Loading Skeleton                                                           */
-/* -------------------------------------------------------------------------- */
-
-function CategorySidebarSkeleton() {
-  return (
-    <aside className="sticky top-24 hidden w-64 shrink-0 self-start overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm lg:block">
-      {/* Header */}
-
-      <div className="border-b border-gray-100 px-4 py-4">
-        <div className="h-5 w-24 animate-pulse rounded bg-gray-100" />
-
-        <div className="mt-2 h-3 w-40 animate-pulse rounded bg-gray-100" />
-      </div>
-
-      {/* Items */}
-
-      <div className="space-y-2 p-3">
-        {Array.from({ length: 7 }).map((_, index) => (
-          <div key={index}>
-            <div className="h-10 animate-pulse rounded-lg bg-gray-100" />
-
-            {index % 2 === 0 && (
-              <div className="ml-5 mt-1.5 h-8 w-4/5 animate-pulse rounded-md bg-gray-50" />
-            )}
-          </div>
-        ))}
-      </div>
-    </aside>
-  );
-}
+type CategorySidebarProps = {
+  currentSlug?: string;
+};
 
 /* -------------------------------------------------------------------------- */
 /* Component                                                                  */
 /* -------------------------------------------------------------------------- */
 
-export function CategorySidebar() {
-  const pathname = usePathname();
+export function CategorySidebar({
+  currentSlug,
+}: CategorySidebarProps) {
+  const [categories, setCategories] =
+    useState<CategoryWithChildren[]>([]);
 
-  const [categories, setCategories] = useState<CategoryWithChildren[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] =
+    useState(true);
 
-  /*
-   * Stores opened main category IDs.
-   */
-  const [openCategories, setOpenCategories] = useState<Set<string>>(
-    () => new Set()
-  );
+  const [error, setError] =
+    useState("");
+
+  const [openCategories, setOpenCategories] =
+    useState<Record<string, boolean>>({});
 
   /* ------------------------------------------------------------------------ */
   /* Load Categories                                                          */
@@ -128,19 +50,89 @@ export function CategorySidebar() {
 
     async function loadCategories() {
       try {
-        const data = await apiFetch<{
-          categories: CategoryWithChildren[];
-        }>("/categories");
+        setLoading(true);
+        setError("");
+
+        const data =
+          await apiFetch<{
+            categories: CategoryWithChildren[];
+          }>("/categories");
 
         if (!mounted) return;
 
-        setCategories(data.categories ?? []);
-      } catch (error) {
-        console.error("[CategorySidebar]", error);
+        const nextCategories =
+          data.categories ?? [];
 
-        if (mounted) {
-          setCategories([]);
+        setCategories(nextCategories);
+
+        /* -------------------------------------------------------------- */
+        /* Automatically open active parent                              */
+        /* -------------------------------------------------------------- */
+
+        const initialOpen: Record<
+          string,
+          boolean
+        > = {};
+
+        function findActiveParent(
+          items: CategoryWithChildren[]
+        ) {
+          for (const category of items) {
+            const childIsActive =
+              category.children?.some(
+                (child) =>
+                  child.slug === currentSlug
+              );
+
+            if (childIsActive) {
+              initialOpen[category.id] =
+                true;
+            }
+
+            if (
+              category.children?.length
+            ) {
+              findActiveParent(
+                category.children
+              );
+            }
+          }
         }
+
+        findActiveParent(
+          nextCategories
+        );
+
+        /* -------------------------------------------------------------- */
+        /* Active main category                                           */
+        /* -------------------------------------------------------------- */
+
+        const activeParent =
+          nextCategories.find(
+            (category) =>
+              category.slug ===
+              currentSlug
+          );
+
+        if (
+          activeParent?.children?.length
+        ) {
+          initialOpen[
+            activeParent.id
+          ] = true;
+        }
+
+        setOpenCategories(
+          initialOpen
+        );
+      } catch (err) {
+        if (!mounted) return;
+
+        setError(
+          err instanceof Error
+            ? err.message
+            : "ক্যাটাগরি লোড করা যায়নি"
+        );
       } finally {
         if (mounted) {
           setLoading(false);
@@ -153,81 +145,21 @@ export function CategorySidebar() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [currentSlug]);
 
   /* ------------------------------------------------------------------------ */
-  /* Active Route                                                             */
+  /* Toggle                                                                   */
   /* ------------------------------------------------------------------------ */
 
-  function isActive(slug: string) {
-    if (!pathname) return false;
+  function toggleCategory(
+    categoryId: string
+  ) {
+    setOpenCategories((previous) => ({
+      ...previous,
 
-    return (
-      pathname === `/category/${slug}` ||
-      pathname.startsWith(`/category/${slug}/`)
-    );
-  }
-
-  /* ------------------------------------------------------------------------ */
-  /* Find Active Parent                                                       */
-  /* ------------------------------------------------------------------------ */
-
-  useEffect(() => {
-    if (!categories.length) return;
-
-    const activeParentIds = new Set<string>();
-
-    categories.forEach((category) => {
-      const children = category.children ?? [];
-
-      /*
-       * Main category itself is active.
-       */
-      if (isActive(category.slug) && children.length > 0) {
-        activeParentIds.add(category.id);
-      }
-
-      /*
-       * One of its children is active.
-       */
-      const hasActiveChild = children.some((child) =>
-        isActive(child.slug)
-      );
-
-      if (hasActiveChild) {
-        activeParentIds.add(category.id);
-      }
-    });
-
-    if (activeParentIds.size === 0) return;
-
-    setOpenCategories((current) => {
-      const next = new Set(current);
-
-      activeParentIds.forEach((id) => {
-        next.add(id);
-      });
-
-      return next;
-    });
-  }, [pathname, categories]);
-
-  /* ------------------------------------------------------------------------ */
-  /* Toggle Category                                                          */
-  /* ------------------------------------------------------------------------ */
-
-  function toggleCategory(categoryId: string) {
-    setOpenCategories((current) => {
-      const next = new Set(current);
-
-      if (next.has(categoryId)) {
-        next.delete(categoryId);
-      } else {
-        next.add(categoryId);
-      }
-
-      return next;
-    });
+      [categoryId]:
+        !previous[categoryId],
+    }));
   }
 
   /* ------------------------------------------------------------------------ */
@@ -235,7 +167,64 @@ export function CategorySidebar() {
   /* ------------------------------------------------------------------------ */
 
   if (loading) {
-    return <CategorySidebarSkeleton />;
+    return (
+      <aside
+        className="
+          hidden
+          w-64
+          shrink-0
+          md:block
+          lg:sticky
+          lg:top-24
+          lg:self-start
+        "
+      >
+        <div className="overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm">
+          <div className="border-b border-gray-100 px-4 py-4">
+            <div className="h-5 w-24 animate-pulse rounded bg-gray-100" />
+
+            <div className="mt-2 h-3 w-40 animate-pulse rounded bg-gray-100" />
+          </div>
+
+          <div className="space-y-2 p-3">
+            {Array.from({
+              length: 7,
+            }).map((_, index) => (
+              <div
+                key={index}
+                className="h-10 animate-pulse rounded-lg bg-gray-100"
+              />
+            ))}
+          </div>
+        </div>
+      </aside>
+    );
+  }
+
+  /* ------------------------------------------------------------------------ */
+  /* Error                                                                    */
+  /* ------------------------------------------------------------------------ */
+
+  if (error) {
+    return (
+      <aside
+        className="
+          hidden
+          w-64
+          shrink-0
+          md:block
+          lg:sticky
+          lg:top-24
+          lg:self-start
+        "
+      >
+        <div className="rounded-xl border border-red-100 bg-red-50 p-4">
+          <p className="text-sm leading-6 text-red-600">
+            {error}
+          </p>
+        </div>
+      </aside>
+    );
   }
 
   /* ------------------------------------------------------------------------ */
@@ -243,7 +232,44 @@ export function CategorySidebar() {
   /* ------------------------------------------------------------------------ */
 
   if (categories.length === 0) {
-    return null;
+    return (
+      <aside
+        className="
+          hidden
+          w-64
+          shrink-0
+          md:block
+        "
+      >
+        <div className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
+          <div className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-100">
+              <svg
+                className="h-4 w-4 text-gray-400"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M4 6h16M4 12h16M4 18h16"
+                />
+              </svg>
+            </div>
+
+            <h2 className="text-sm font-bold text-gray-900">
+              ক্যাটাগরি
+            </h2>
+          </div>
+
+          <p className="mt-4 text-sm text-gray-500">
+            কোনো ক্যাটাগরি পাওয়া যায়নি।
+          </p>
+        </div>
+      </aside>
+    );
   }
 
   /* ------------------------------------------------------------------------ */
@@ -252,254 +278,371 @@ export function CategorySidebar() {
 
   return (
     <aside
-      aria-label="Product categories"
-      className="sticky top-24 hidden w-64 shrink-0 self-start overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm lg:block"
+      className="
+        hidden
+        w-64
+        shrink-0
+        md:block
+        lg:sticky
+        lg:top-24
+        lg:self-start
+      "
     >
-      {/* ================================================================== */}
-      {/* HEADER                                                             */}
-      {/* ================================================================== */}
+      <div className="overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm">
+        {/* ================================================================== */}
+        {/* Header                                                             */}
+        {/* ================================================================== */}
 
-      <div className="border-b border-gray-100 px-4 py-4">
-        <div className="flex items-center gap-2.5">
-          {/* Icon */}
+        <div className="border-b border-gray-100 px-4 py-4">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
+              <svg
+                className="h-5 w-5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M4 6h16M4 12h16M4 18h16"
+                />
+              </svg>
+            </div>
 
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
-            <GridIcon className="h-4 w-4" />
-          </div>
+            <div className="min-w-0">
+              <h2 className="text-sm font-bold text-gray-900">
+                প্রোডাক্ট ক্যাটাগরি
+              </h2>
 
-          {/* Text */}
-
-          <div className="min-w-0">
-            <h2 className="text-sm font-bold text-gray-900">
-              ক্যাটাগরি
-            </h2>
-
-            <p className="mt-0.5 text-[11px] text-gray-500">
-              পছন্দের ক্যাটাগরি দেখুন
-            </p>
+              <p className="mt-0.5 truncate text-[11px] text-gray-400">
+                পছন্দের ক্যাটাগরি নির্বাচন করুন
+              </p>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* ================================================================== */}
-      {/* CATEGORY LIST                                                      */}
-      {/* ================================================================== */}
+        {/* ================================================================== */}
+        {/* Category List                                                      */}
+        {/* ================================================================== */}
 
-      <nav className="p-2">
-        {categories.map((category) => {
-          const children = category.children ?? [];
+        <nav
+          className="p-2"
+          aria-label="Product categories"
+        >
+          <ul className="space-y-1">
+            {categories.map(
+              (category) => {
+                const hasChildren =
+                  Boolean(
+                    category.children
+                      ?.length
+                  );
 
-          const hasChildren = children.length > 0;
+                const isOpen =
+                  Boolean(
+                    openCategories[
+                      category.id
+                    ]
+                  );
 
-          const categoryActive = isActive(category.slug);
+                const isActive =
+                  currentSlug ===
+                  category.slug;
 
-          const hasActiveChild = children.some((child) =>
-            isActive(child.slug)
-          );
+                /*
+                 * Backend already calculates:
+                 *
+                 * own products
+                 * +
+                 * all subcategory products
+                 */
+                const totalCount =
+                  category._count
+                    ?.products ?? 0;
 
-          const isOpen = openCategories.has(category.id);
-
-          const mainActive =
-            categoryActive || hasActiveChild;
-
-          return (
-            <div
-              key={category.id}
-              className="mb-1 last:mb-0"
-            >
-              {/* ========================================================== */}
-              {/* MAIN CATEGORY                                               */}
-              {/* ========================================================== */}
-
-              <div
-                className={`group relative flex min-h-[52px] items-center rounded-xl transition-colors duration-200 ${
-                  mainActive
-                    ? "bg-brand-50 text-brand-700"
-                    : "text-gray-800 hover:bg-gray-50"
-                }`}
-              >
-                {/* Active indicator */}
-
-                {mainActive && (
-                  <span className="absolute left-0 top-1/2 h-6 w-0.5 -translate-y-1/2 rounded-full bg-brand-500" />
-                )}
-
-                {/* -------------------------------------------------------- */}
-                {/* Main Category Link                                        */}
-                {/* -------------------------------------------------------- */}
-
-                <Link
-                  href={`/category/${category.slug}`}
-                  aria-current={
-                    categoryActive ? "page" : undefined
-                  }
-                  className="flex min-w-0 flex-1 items-center gap-3 px-3 py-3"
-                >
-                  {/* Category Image */}
-
-                  {category.image ? (
-                    <div className="h-8 w-8 shrink-0 overflow-hidden rounded-lg border border-gray-100 bg-gray-50">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={category.image}
-                        alt=""
-                        loading="lazy"
-                        className="h-full w-full object-cover"
-                      />
-                    </div>
-                  ) : (
-                    <div
-                      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-bold transition-colors ${
-                        mainActive
-                          ? "bg-brand-100 text-brand-600"
-                          : "bg-gray-100 text-gray-500 group-hover:bg-brand-50 group-hover:text-brand-600"
-                      }`}
-                    >
-                      {category.name
-                        .charAt(0)
-                        .toUpperCase()}
-                    </div>
-                  )}
-
-                  {/* Category Name */}
-
-                  <span className="min-w-0 flex-1 truncate text-sm font-semibold">
-                    {category.name}
-                  </span>
-
-                  {/* Product Count */}
-
-                  {category._count?.products !== undefined && (
-                    <span
-                      className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
-                        mainActive
-                          ? "bg-brand-100 text-brand-600"
-                          : "bg-gray-100 text-gray-400"
-                      }`}
-                    >
-                      {category._count.products}
-                    </span>
-                  )}
-                </Link>
-
-                {/* -------------------------------------------------------- */}
-                {/* Toggle Button                                              */}
-                {/* -------------------------------------------------------- */}
-
-                {hasChildren && (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      toggleCategory(category.id)
-                    }
-                    aria-label={
-                      isOpen
-                        ? `${category.name} বন্ধ করুন`
-                        : `${category.name} খুলুন`
-                    }
-                    aria-expanded={isOpen}
-                    className={`mr-2 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors ${
-                      mainActive
-                        ? "text-brand-500 hover:bg-brand-100"
-                        : "text-gray-400 hover:bg-gray-100 hover:text-brand-600"
-                    }`}
+                return (
+                  <li
+                    key={category.id}
+                    className="overflow-hidden"
                   >
-                    <ChevronIcon
-                      className={`h-4 w-4 transition-transform duration-200 ${
-                        isOpen ? "rotate-90" : "rotate-0"
-                      }`}
-                    />
-                  </button>
-                )}
-              </div>
+                    {/* ==================================================== */}
+                    {/* Main Category                                         */}
+                    {/* ==================================================== */}
 
-              {/* ========================================================== */}
-              {/* SUBCATEGORIES                                               */}
-              {/* ========================================================== */}
-
-              {hasChildren && isOpen && (
-                <div className="relative ml-5 mt-1 border-l border-gray-100 pl-2">
-                  {children.map((subcategory) => {
-                    const active = isActive(
-                      subcategory.slug
-                    );
-
-                    return (
-                      <Link
-                        key={subcategory.id}
-                        href={`/category/${subcategory.slug}`}
-                        aria-current={
-                          active ? "page" : undefined
+                    <div
+                      className={`
+                        flex
+                        items-center
+                        rounded-lg
+                        transition
+                        ${
+                          isActive
+                            ? "bg-brand-50"
+                            : "hover:bg-gray-50"
                         }
-                        className={`group relative flex min-h-9 items-center gap-2 rounded-lg px-3 py-2 transition-colors duration-200 ${
-                          active
-                            ? "bg-brand-50 font-semibold text-brand-600"
-                            : "text-gray-500 hover:bg-gray-50 hover:text-brand-600"
-                        }`}
+                      `}
+                    >
+                      {/* Main category link */}
+                      <Link
+                        href={`/category/${category.slug}`}
+                        className={`
+                          flex
+                          min-w-0
+                          flex-1
+                          items-center
+                          gap-2.5
+                          px-3
+                          py-2.5
+                          text-sm
+                          font-semibold
+                          transition
+                          ${
+                            isActive
+                              ? "text-brand-600"
+                              : "text-gray-700 hover:text-brand-600"
+                          }
+                        `}
                       >
-                        {/* Active indicator */}
-
-                        {active && (
-                          <span className="absolute -left-[9px] top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-full bg-brand-500" />
-                        )}
-
-                        {/* Dot */}
-
                         <span
-                          className={`h-1.5 w-1.5 shrink-0 rounded-full transition-colors ${
-                            active
-                              ? "bg-brand-500"
-                              : "bg-gray-300 group-hover:bg-brand-400"
-                          }`}
+                          className={`
+                            h-1.5
+                            w-1.5
+                            shrink-0
+                            rounded-full
+                            ${
+                              isActive
+                                ? "bg-brand-500"
+                                : "bg-gray-300"
+                            }
+                          `}
                         />
 
-                        {/* Name */}
-
-                        <span className="min-w-0 flex-1 truncate text-xs">
-                          {subcategory.name}
+                        <span className="min-w-0 flex-1 truncate">
+                          {category.name}
                         </span>
 
-                        {/* Product Count */}
-
-                        {subcategory._count?.products !== undefined && (
-                          <span
-                            className={`shrink-0 text-[10px] ${
-                              active
-                                ? "text-brand-500"
-                                : "text-gray-300"
-                            }`}
-                          >
-                            {subcategory._count.products}
-                          </span>
-                        )}
-
-                        {/* Arrow */}
-
-                        <ChevronIcon
-                          className={`h-3.5 w-3.5 shrink-0 transition-all duration-200 ${
-                            active
-                              ? "translate-x-0.5 text-brand-400"
-                              : "text-gray-200 group-hover:translate-x-0.5 group-hover:text-brand-400"
-                          }`}
-                        />
+                        {/* TOTAL */}
+                        <span
+                          className={`
+                            shrink-0
+                            rounded-full
+                            px-2
+                            py-0.5
+                            text-[10px]
+                            font-semibold
+                            tabular-nums
+                            ${
+                              isActive
+                                ? "bg-brand-100 text-brand-600"
+                                : "bg-gray-100 text-gray-500"
+                            }
+                          `}
+                        >
+                          {totalCount}
+                        </span>
                       </Link>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </nav>
 
-      {/* ================================================================== */}
-      {/* FOOTER                                                             */}
-      {/* ================================================================== */}
+                      {/* Expand button */}
+                      {hasChildren && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            toggleCategory(
+                              category.id
+                            )
+                          }
+                          aria-expanded={
+                            isOpen
+                          }
+                          aria-label={
+                            isOpen
+                              ? "Subcategory বন্ধ করুন"
+                              : "Subcategory দেখুন"
+                          }
+                          className="
+                            mr-1
+                            flex
+                            h-8
+                            w-8
+                            shrink-0
+                            items-center
+                            justify-center
+                            rounded-md
+                            text-gray-400
+                            transition
+                            hover:bg-white
+                            hover:text-brand-500
+                          "
+                        >
+                          <svg
+                            className={`
+                              h-4
+                              w-4
+                              transition-transform
+                              duration-200
+                              ${
+                                isOpen
+                                  ? "rotate-180 text-brand-500"
+                                  : ""
+                              }
+                            `}
+                            viewBox="0 0 20 20"
+                            fill="currentColor"
+                          >
+                            <path
+                              fillRule="evenodd"
+                              d="
+                                M5.23 7.21
+                                a.75.75 0 011.06.02
+                                L10 11.168
+                                l3.71-3.938
+                                a.75.75 0 111.08 1.04
+                                l-4.25 4.5
+                                a.75.75 0 01-1.08 0
+                                l-4.25-4.5
+                                a.75.75 0 01.02-1.06z
+                              "
+                              clipRule="evenodd"
+                            />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
 
-      <div className="border-t border-gray-100 px-4 py-3">
-        <p className="text-center text-[11px] text-gray-400">
-          আপনার পছন্দের পণ্য খুঁজে নিন
-        </p>
+                    {/* ==================================================== */}
+                    {/* Subcategories                                         */}
+                    {/* ==================================================== */}
+
+                    {hasChildren && (
+                      <div
+                        className={`
+                          grid
+                          transition-all
+                          duration-300
+                          ease-in-out
+                          ${
+                            isOpen
+                              ? "grid-rows-[1fr] opacity-100"
+                              : "grid-rows-[0fr] opacity-0"
+                          }
+                        `}
+                      >
+                        <div className="min-h-0 overflow-hidden">
+                          <div className="ml-4 border-l border-gray-100 py-1 pl-3">
+                            {/* ------------------------------------------------ */}
+                            {/* All Products                                    */}
+                            {/* ------------------------------------------------ */}
+
+                            <Link
+                              href={`/category/${category.slug}`}
+                              className={`
+                                mb-1
+                                flex
+                                items-center
+                                justify-between
+                                gap-2
+                                rounded-md
+                                px-2.5
+                                py-2
+                                text-xs
+                                font-semibold
+                                transition
+                                ${
+                                  isActive
+                                    ? "bg-brand-50 text-brand-600"
+                                    : "text-brand-600 hover:bg-brand-50"
+                                }
+                              `}
+                            >
+                              <span>
+                                সব প্রোডাক্ট
+                              </span>
+
+                              <span className="text-sm">
+                                →
+                              </span>
+                            </Link>
+
+                            {/* ------------------------------------------------ */}
+                            {/* Children                                        */}
+                            {/* ------------------------------------------------ */}
+
+                            <ul className="space-y-0.5">
+                              {category.children?.map(
+                                (child) => {
+                                  const childActive =
+                                    currentSlug ===
+                                    child.slug;
+
+                                  const childCount =
+                                    child._count
+                                      ?.products ??
+                                    0;
+
+                                  return (
+                                    <li
+                                      key={
+                                        child.id
+                                      }
+                                    >
+                                      <Link
+                                        href={`/category/${child.slug}`}
+                                        className={`
+                                          flex
+                                          items-center
+                                          justify-between
+                                          gap-2
+                                          rounded-md
+                                          px-2.5
+                                          py-2
+                                          text-xs
+                                          transition
+                                          ${
+                                            childActive
+                                              ? "bg-brand-50 font-semibold text-brand-600"
+                                              : "text-gray-500 hover:bg-gray-50 hover:text-brand-600"
+                                          }
+                                        `}
+                                      >
+                                        <span className="min-w-0 truncate">
+                                          {
+                                            child.name
+                                          }
+                                        </span>
+
+                                        <span
+                                          className={`
+                                            shrink-0
+                                            tabular-nums
+                                            ${
+                                              childActive
+                                                ? "text-brand-500"
+                                                : "text-gray-400"
+                                            }
+                                          `}
+                                        >
+                                          {
+                                            childCount
+                                          }
+                                        </span>
+                                      </Link>
+                                    </li>
+                                  );
+                                }
+                              )}
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </li>
+                );
+              }
+            )}
+          </ul>
+        </nav>
       </div>
     </aside>
   );

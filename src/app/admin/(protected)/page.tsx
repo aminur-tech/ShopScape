@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 
 import { useAuth } from "@/lib/auth-context";
 import { apiFetch } from "@/lib/api";
@@ -45,32 +45,49 @@ type DashboardData = {
   monthlyAnalytics: MonthlyAnalytics[];
 };
 
+const STATUS_STYLES: Record<string, string> = {
+  PENDING: "bg-yellow-50 text-yellow-700 border-yellow-100",
+  CONFIRMED: "bg-blue-50 text-blue-700 border-blue-100",
+  PROCESSING: "bg-purple-50 text-purple-700 border-purple-100",
+  SHIPPED: "bg-indigo-50 text-indigo-700 border-indigo-100",
+  DELIVERED: "bg-green-50 text-green-700 border-green-100",
+  CANCELLED: "bg-red-50 text-red-700 border-red-100",
+};
+
 /* =========================================================
-   STATUS COLORS
+   LOADING
 ========================================================= */
 
-const STATUS_STYLES: Record<
-  string,
-  string
-> = {
-  PENDING:
-    "bg-yellow-50 text-yellow-700",
+function DashboardSkeleton() {
+  return (
+    <div className="space-y-6 animate-pulse">
+      <div className="space-y-2">
+        <div className="h-7 w-40 rounded-lg bg-gray-100" />
+        <div className="h-4 w-64 max-w-full rounded bg-gray-100" />
+      </div>
 
-  CONFIRMED:
-    "bg-blue-50 text-blue-700",
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+        {[1, 2, 3].map((item) => (
+          <div
+            key={item}
+            className="rounded-2xl border border-gray-100 bg-white p-5"
+          >
+            <div className="h-4 w-24 rounded bg-gray-100" />
+            <div className="mt-4 h-8 w-32 rounded bg-gray-100" />
+            <div className="mt-3 h-3 w-28 rounded bg-gray-100" />
+          </div>
+        ))}
+      </div>
 
-  PROCESSING:
-    "bg-purple-50 text-purple-700",
+      <div className="h-[420px] rounded-2xl border border-gray-100 bg-gray-50" />
 
-  SHIPPED:
-    "bg-indigo-50 text-indigo-700",
-
-  DELIVERED:
-    "bg-green-50 text-green-700",
-
-  CANCELLED:
-    "bg-red-50 text-red-700",
-};
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <div className="h-72 rounded-2xl border border-gray-100 bg-gray-50" />
+        <div className="h-72 rounded-2xl border border-gray-100 bg-gray-50" />
+      </div>
+    </div>
+  );
+}
 
 /* =========================================================
    PAGE
@@ -88,36 +105,24 @@ export default function AdminDashboardPage() {
   const [error, setError] =
     useState("");
 
-  /* =======================================================
-     FETCH DASHBOARD
-  ======================================================= */
-
   useEffect(() => {
-    if (!token) {
-      return;
-    }
+    if (!token) return;
 
     let mounted = true;
 
     setLoading(true);
     setError("");
 
-    apiFetch<DashboardData>(
-      "/admin/dashboard",
-      {
-        token,
-      }
-    )
+    apiFetch<DashboardData>("/admin/dashboard", {
+      token,
+    })
       .then((result) => {
         if (mounted) {
           setData(result);
         }
       })
       .catch((err) => {
-        console.error(
-          "Dashboard error:",
-          err
-        );
+        console.error("Dashboard error:", err);
 
         if (mounted) {
           setError(
@@ -136,52 +141,21 @@ export default function AdminDashboardPage() {
     };
   }, [token]);
 
-  /* =======================================================
-     LOADING
-  ======================================================= */
-
   if (loading) {
-    return (
-      <div className="space-y-6">
-        <div>
-          <div className="h-7 w-40 bg-gray-100 rounded animate-pulse" />
-
-          <div className="h-4 w-64 bg-gray-100 rounded mt-2 animate-pulse" />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {[1, 2, 3].map((item) => (
-            <div
-              key={item}
-              className="border border-gray-100 rounded-xl p-5"
-            >
-              <div className="h-4 w-24 bg-gray-100 rounded animate-pulse" />
-
-              <div className="h-8 w-32 bg-gray-100 rounded mt-3 animate-pulse" />
-            </div>
-          ))}
-        </div>
-
-        <div className="h-80 border border-gray-100 rounded-xl bg-gray-50 animate-pulse" />
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
-
-  /* =======================================================
-     ERROR
-  ======================================================= */
 
   if (error) {
     return (
-      <div className="border border-red-100 bg-red-50 rounded-xl p-6">
-        <p className="text-red-600 font-medium">
+      <div className="rounded-2xl border border-red-100 bg-red-50 p-5 sm:p-6">
+        <p className="text-sm sm:text-base font-medium text-red-600">
           {error}
         </p>
 
         <button
           type="button"
           onClick={() => window.location.reload()}
-          className="mt-4 px-4 py-2 rounded-lg bg-red-600 text-white text-sm hover:bg-red-700"
+          className="mt-4 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-red-700"
         >
           আবার চেষ্টা করুন
         </button>
@@ -189,210 +163,178 @@ export default function AdminDashboardPage() {
     );
   }
 
-  /* =======================================================
-     EMPTY
-  ======================================================= */
-
   if (!data) {
     return (
-      <div className="border border-gray-100 rounded-xl p-6">
-        <p className="text-gray-500">
+      <div className="rounded-2xl border border-gray-100 bg-white p-6">
+        <p className="text-sm text-gray-500">
           কোনো ড্যাশবোর্ড তথ্য পাওয়া যায়নি।
         </p>
       </div>
     );
   }
 
-  /* =======================================================
+  /* =========================================================
      SUMMARY
-  ======================================================= */
+  ========================================================= */
 
   const cards = [
     {
       label: "মোট অর্ডার",
-      value: data.totalOrders.toLocaleString(
-        "en-BD"
-      ),
-      description:
-        "সকল অর্ডার",
+      value: data.totalOrders.toLocaleString("en-BD"),
+      description: "সকল অর্ডার",
+      icon: "🧾",
     },
-
     {
       label: "মোট কাস্টমার",
-      value:
-        data.totalCustomers.toLocaleString(
-          "en-BD"
-        ),
-      description:
-        "অর্ডার করা unique customer",
+      value: data.totalCustomers.toLocaleString("en-BD"),
+      description: "অর্ডার করা unique customer",
+      icon: "👥",
     },
-
     {
       label: "মোট আয়",
-      value: formatBDT(
-        data.totalRevenue
-      ),
-      description:
-        "Cancelled বাদে",
+      value: formatBDT(data.totalRevenue),
+      description: "Cancelled বাদে",
+      icon: "৳",
     },
   ];
 
-  /* =======================================================
-     CHART DATA
-  ======================================================= */
+  /* =========================================================
+     MONTHLY DATA
+  ========================================================= */
 
-  const monthlyData =
-    data.monthlyAnalytics ?? [];
+  const monthlyData = data.monthlyAnalytics ?? [];
 
   const maxOrders = Math.max(
-    ...monthlyData.map(
-      (item) => item.orders
-    ),
+    ...monthlyData.map((item) => item.orders),
     1
   );
 
   const maxCustomers = Math.max(
-    ...monthlyData.map(
-      (item) => item.customers
-    ),
+    ...monthlyData.map((item) => item.customers),
     1
   );
 
   const maxRevenue = Math.max(
-    ...monthlyData.map(
-      (item) => item.revenue
-    ),
+    ...monthlyData.map((item) => item.revenue),
     1
   );
 
-  /* =======================================================
-     TOTALS FOR LAST 12 MONTHS
-  ======================================================= */
+  const monthlyTotals = monthlyData.reduce(
+    (acc, item) => {
+      acc.orders += item.orders;
+      acc.customers += item.customers;
+      acc.revenue += item.revenue;
 
-  const monthlyTotals =
-    monthlyData.reduce(
-      (acc, item) => {
-        acc.orders += item.orders;
-
-        acc.customers +=
-          item.customers;
-
-        acc.revenue += item.revenue;
-
-        return acc;
-      },
-      {
-        orders: 0,
-        customers: 0,
-        revenue: 0,
-      }
-    );
-
-  /* =======================================================
-     RENDER
-  ======================================================= */
+      return acc;
+    },
+    {
+      orders: 0,
+      customers: 0,
+      revenue: 0,
+    }
+  );
 
   return (
-    <div className="space-y-6 pb-10">
-      {/* ===================================================
+    <div className="min-w-0 space-y-5 sm:space-y-6 pb-24 lg:pb-8">
+      {/* =====================================================
           HEADER
-      =================================================== */}
+      ===================================================== */}
 
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-gray-900">
             ড্যাশবোর্ড
           </h1>
 
-          <p className="text-sm text-gray-500 mt-1">
+          <p className="mt-1 text-xs sm:text-sm text-gray-500">
             ShopScape-এর ব্যবসার সারসংক্ষেপ
           </p>
         </div>
 
         <Link
           href="/admin/orders"
-          className="inline-flex items-center justify-center rounded-lg bg-gray-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-gray-800 transition"
+          className="inline-flex w-full sm:w-auto items-center justify-center rounded-xl bg-gray-900 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-gray-800 active:scale-[0.98]"
         >
           অর্ডার দেখুন
         </Link>
-      </div>
+      </header>
 
-      {/* ===================================================
+      {/* =====================================================
           SUMMARY CARDS
-      =================================================== */}
+      ===================================================== */}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
         {cards.map((card) => (
           <div
             key={card.label}
-            className="bg-white border border-gray-100 rounded-xl p-5 shadow-sm"
+            className="group rounded-2xl border border-gray-100 bg-white p-4 sm:p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
           >
-            <p className="text-sm text-gray-500">
-              {card.label}
-            </p>
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm text-gray-500">
+                  {card.label}
+                </p>
 
-            <p className="text-2xl font-bold text-gray-900 mt-2">
-              {card.value}
-            </p>
+                <p className="mt-2 text-xl sm:text-2xl font-bold text-gray-900 break-words">
+                  {card.value}
+                </p>
 
-            <p className="text-xs text-gray-400 mt-2">
-              {card.description}
-            </p>
+                <p className="mt-1.5 text-[11px] sm:text-xs text-gray-400">
+                  {card.description}
+                </p>
+              </div>
+
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gray-50 text-lg">
+                {card.icon}
+              </span>
+            </div>
           </div>
         ))}
-      </div>
+      </section>
 
-      {/* ===================================================
+      {/* =====================================================
           MONTHLY ANALYTICS
-      =================================================== */}
+      ===================================================== */}
 
-      <div className="bg-white border border-gray-100 rounded-xl shadow-sm overflow-hidden">
+      <section className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
         {/* Header */}
-
-        <div className="p-5 border-b border-gray-100">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900">
+        <div className="border-b border-gray-100 p-4 sm:p-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <h2 className="text-base sm:text-lg font-semibold text-gray-900">
                 মাসিক ব্যবসার বিশ্লেষণ
               </h2>
 
-              <p className="text-sm text-gray-500 mt-1">
+              <p className="mt-1 text-xs sm:text-sm text-gray-500">
                 গত ১২ মাসের অর্ডার, কাস্টমার ও আয়
               </p>
             </div>
 
-            <div className="text-xs text-gray-500 bg-gray-50 px-3 py-2 rounded-lg">
+            <span className="w-fit rounded-lg bg-gray-50 px-3 py-1.5 text-[11px] sm:text-xs text-gray-500">
               Last 12 Months
-            </div>
+            </span>
           </div>
         </div>
 
-        {/* =================================================
-            MINI TOTALS
-        ================================================= */}
-
-        <div className="grid grid-cols-1 sm:grid-cols-3 border-b border-gray-100">
-          <div className="p-4 sm:border-r border-gray-100">
+        {/* Totals */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-gray-100 border-b border-gray-100">
+          <div className="p-4">
             <p className="text-xs text-gray-500">
               ১২ মাসে অর্ডার
             </p>
 
-            <p className="text-xl font-bold text-gray-900 mt-1">
-              {monthlyTotals.orders.toLocaleString(
-                "en-BD"
-              )}
+            <p className="mt-1 text-lg sm:text-xl font-bold text-gray-900">
+              {monthlyTotals.orders.toLocaleString("en-BD")}
             </p>
           </div>
 
-          <div className="p-4 sm:border-r border-gray-100">
+          <div className="p-4">
             <p className="text-xs text-gray-500">
               ১২ মাসে কাস্টমার
             </p>
 
-            <p className="text-xl font-bold text-gray-900 mt-1">
-              {monthlyTotals.customers.toLocaleString(
-                "en-BD"
-              )}
+            <p className="mt-1 text-lg sm:text-xl font-bold text-gray-900">
+              {monthlyTotals.customers.toLocaleString("en-BD")}
             </p>
           </div>
 
@@ -401,378 +343,294 @@ export default function AdminDashboardPage() {
               ১২ মাসে আয়
             </p>
 
-            <p className="text-xl font-bold text-gray-900 mt-1">
-              {formatBDT(
-                monthlyTotals.revenue
-              )}
+            <p className="mt-1 text-lg sm:text-xl font-bold text-gray-900 break-words">
+              {formatBDT(monthlyTotals.revenue)}
             </p>
           </div>
         </div>
 
-        {/* =================================================
-            CHART
-        ================================================= */}
-
-        <div className="p-5">
-          <div className="overflow-x-auto">
-            <div
-              className="min-w-[900px]"
-              style={{
-                height: 390,
-              }}
-            >
-              {/* Chart area */}
-
-              <div className="relative h-[330px]">
+        {/* Chart */}
+        <div className="p-3 sm:p-5">
+          {monthlyData.length === 0 ? (
+            <div className="flex h-72 items-center justify-center rounded-xl bg-gray-50 text-sm text-gray-400">
+              কোনো মাসিক তথ্য নেই।
+            </div>
+          ) : (
+            <div className="w-full overflow-x-auto overscroll-x-contain pb-2">
+              <div
+                className="relative min-w-[680px] sm:min-w-[800px]"
+                style={{ height: 380 }}
+              >
                 {/* Grid */}
-
-                <div className="absolute inset-0 flex flex-col justify-between">
-                  {[0, 1, 2, 3, 4].map(
-                    (line) => (
-                      <div
-                        key={line}
-                        className="border-t border-dashed border-gray-100"
-                      />
-                    )
-                  )}
+                <div className="absolute inset-x-0 top-0 bottom-12 flex flex-col justify-between">
+                  {[0, 1, 2, 3, 4].map((line) => (
+                    <div
+                      key={line}
+                      className="border-t border-dashed border-gray-100"
+                    />
+                  ))}
                 </div>
 
                 {/* Bars */}
+                <div className="absolute inset-0 flex items-stretch justify-around gap-2 px-2 sm:px-4">
+                  {monthlyData.map((item) => {
+                    const ordersHeight = Math.max(
+                      (item.orders / maxOrders) * 100,
+                      item.orders > 0 ? 4 : 0
+                    );
 
-                <div className="absolute inset-0 flex items-end justify-around gap-3 px-4">
-                  {monthlyData.map(
-                    (item) => {
-                      const ordersHeight =
-                        Math.max(
-                          (item.orders /
-                            maxOrders) *
-                            100,
-                          item.orders > 0
-                            ? 4
-                            : 0
-                        );
+                    const customerHeight = Math.max(
+                      (item.customers / maxCustomers) * 100,
+                      item.customers > 0 ? 4 : 0
+                    );
 
-                      const customerHeight =
-                        Math.max(
-                          (item.customers /
-                            maxCustomers) *
-                            100,
-                          item.customers > 0
-                            ? 4
-                            : 0
-                        );
+                    const revenueHeight = Math.max(
+                      (item.revenue / maxRevenue) * 100,
+                      item.revenue > 0 ? 4 : 0
+                    );
 
-                      const revenueHeight =
-                        Math.max(
-                          (item.revenue /
-                            maxRevenue) *
-                            100,
-                          item.revenue > 0
-                            ? 4
-                            : 0
-                        );
+                    return (
+                      <div
+                        key={item.month}
+                        className="group relative flex min-w-10 flex-1 flex-col justify-end items-center"
+                      >
+                        {/* Tooltip */}
+                        <div className="pointer-events-none absolute bottom-[95px] left-1/2 z-30 w-max max-w-[180px] -translate-x-1/2 translate-y-2 rounded-xl bg-gray-900 px-3 py-2 text-[11px] text-white opacity-0 shadow-xl transition-all duration-200 group-hover:translate-y-0 group-hover:opacity-100">
+                          <p className="font-semibold">
+                            {item.monthLabel}
+                          </p>
 
-                      return (
-                        <div
-                          key={item.month}
-                          className="flex-1 h-full flex flex-col justify-end items-center group"
-                        >
-                          {/* Tooltip */}
+                          <p className="mt-1">
+                            অর্ডার: {item.orders}
+                          </p>
 
-                          <div className="opacity-0 group-hover:opacity-100 transition absolute -translate-y-2 bg-gray-900 text-white text-xs rounded-lg px-3 py-2 pointer-events-none z-20 whitespace-nowrap">
-                            <div>
-                              {item.monthLabel}
-                            </div>
+                          <p>
+                            কাস্টমার: {item.customers}
+                          </p>
 
-                            <div className="mt-1">
-                              অর্ডার:{" "}
-                              {
-                                item.orders
-                              }
-                            </div>
-
-                            <div>
-                              কাস্টমার:{" "}
-                              {
-                                item.customers
-                              }
-                            </div>
-
-                            <div>
-                              আয়:{" "}
-                              {formatBDT(
-                                item.revenue
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Bars */}
-
-                          <div className="h-[290px] flex items-end gap-1">
-                            {/* Orders */}
-
-                            <div
-                              className="w-3 sm:w-4 bg-blue-500 rounded-t-md transition-all duration-300 group-hover:bg-blue-600"
-                              style={{
-                                height: `${ordersHeight}%`,
-                              }}
-                              title={`অর্ডার: ${item.orders}`}
-                            />
-
-                            {/* Customers */}
-
-                            <div
-                              className="w-3 sm:w-4 bg-purple-500 rounded-t-md transition-all duration-300 group-hover:bg-purple-600"
-                              style={{
-                                height: `${customerHeight}%`,
-                              }}
-                              title={`কাস্টমার: ${item.customers}`}
-                            />
-
-                            {/* Revenue */}
-
-                            <div
-                              className="w-3 sm:w-4 bg-green-500 rounded-t-md transition-all duration-300 group-hover:bg-green-600"
-                              style={{
-                                height: `${revenueHeight}%`,
-                              }}
-                              title={`আয়: ${formatBDT(
-                                item.revenue
-                              )}`}
-                            />
-                          </div>
-
-                          {/* Month */}
-
-                          <div className="mt-3 text-xs text-gray-500 whitespace-nowrap">
-                            {
-                              item.monthLabel
-                            }
-                          </div>
+                          <p>
+                            আয়: {formatBDT(item.revenue)}
+                          </p>
                         </div>
-                      );
-                    }
-                  )}
+
+                        {/* Bars */}
+                        <div className="flex h-[300px] items-end gap-0.5 sm:gap-1">
+                          <div
+                            className="w-2.5 sm:w-4 rounded-t-md bg-blue-500 transition-all duration-300 group-hover:bg-blue-600"
+                            style={{
+                              height: `${ordersHeight}%`,
+                            }}
+                          />
+
+                          <div
+                            className="w-2.5 sm:w-4 rounded-t-md bg-purple-500 transition-all duration-300 group-hover:bg-purple-600"
+                            style={{
+                              height: `${customerHeight}%`,
+                            }}
+                          />
+
+                          <div
+                            className="w-2.5 sm:w-4 rounded-t-md bg-green-500 transition-all duration-300 group-hover:bg-green-600"
+                            style={{
+                              height: `${revenueHeight}%`,
+                            }}
+                          />
+                        </div>
+
+                        <span className="mt-2 max-w-16 truncate text-[10px] sm:text-xs text-gray-500">
+                          {item.monthLabel}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
+            </div>
+          )}
 
-              {/* Legend */}
+          {/* Legend */}
+          <div className="mt-3 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-[11px] sm:text-xs text-gray-500">
+            <div className="flex items-center gap-1.5">
+              <span className="h-2.5 w-2.5 rounded-sm bg-blue-500" />
+              <span>অর্ডার</span>
+            </div>
 
-              <div className="flex justify-center gap-6 text-xs text-gray-500 mt-3">
-                <div className="flex items-center gap-2">
-                  <span className="w-3 h-3 rounded-sm bg-blue-500" />
+            <div className="flex items-center gap-1.5">
+              <span className="h-2.5 w-2.5 rounded-sm bg-purple-500" />
+              <span>কাস্টমার</span>
+            </div>
 
-                  <span>অর্ডার</span>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <span className="w-3 h-3 rounded-sm bg-purple-500" />
-
-                  <span>কাস্টমার</span>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <span className="w-3 h-3 rounded-sm bg-green-500" />
-
-                  <span>আয়</span>
-                </div>
-              </div>
+            <div className="flex items-center gap-1.5">
+              <span className="h-2.5 w-2.5 rounded-sm bg-green-500" />
+              <span>আয়</span>
             </div>
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* ===================================================
+      {/* =====================================================
           STATUS + STOCK
-      =================================================== */}
+      ===================================================== */}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* =================================================
-            ORDER STATUS
-        ================================================= */}
+      <section className="grid grid-cols-1 xl:grid-cols-2 gap-5 sm:gap-6">
+        {/* Order Status */}
+        <div className="min-w-0 rounded-2xl border border-gray-100 bg-white p-4 sm:p-5 shadow-sm">
+          <div className="mb-4">
+            <h2 className="text-base font-semibold text-gray-900">
+              অর্ডারের অবস্থা
+            </h2>
 
-        <div className="bg-white border border-gray-100 rounded-xl shadow-sm p-5">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h2 className="font-semibold text-gray-900">
-                অর্ডারের অবস্থা
-              </h2>
-
-              <p className="text-xs text-gray-500 mt-1">
-                সকল অর্ডারের status
-              </p>
-            </div>
+            <p className="mt-1 text-xs text-gray-500">
+              সকল অর্ডারের status
+            </p>
           </div>
 
           <div className="space-y-2">
-            {data.ordersByStatus.length ===
-            0 ? (
-              <p className="text-sm text-gray-400">
+            {data.ordersByStatus.length === 0 ? (
+              <p className="rounded-xl bg-gray-50 p-4 text-sm text-gray-400">
                 কোনো অর্ডার নেই।
               </p>
             ) : (
-              data.ordersByStatus.map(
-                (item) => (
-                  <div
-                    key={item.status}
-                    className="flex items-center justify-between rounded-lg border border-gray-50 px-3 py-2.5"
+              data.ordersByStatus.map((item) => (
+                <div
+                  key={item.status}
+                  className="flex min-w-0 items-center justify-between gap-3 rounded-xl border border-gray-100 px-3 py-3"
+                >
+                  <span
+                    className={`shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-medium ${
+                      STATUS_STYLES[item.status] ??
+                      "bg-gray-50 text-gray-600 border-gray-100"
+                    }`}
                   >
-                    <span
-                      className={`text-xs font-medium px-2.5 py-1 rounded-full ${
-                        STATUS_STYLES[
-                          item.status
-                        ] ??
-                        "bg-gray-50 text-gray-600"
-                      }`}
-                    >
-                      {STATUS_LABELS_BN[
-                        item.status
-                      ] ??
-                        item.status}
-                    </span>
+                    {STATUS_LABELS_BN[item.status] ??
+                      item.status}
+                  </span>
 
-                    <span className="font-semibold text-gray-900">
-                      {item.count.toLocaleString(
-                        "en-BD"
-                      )}
-                    </span>
-                  </div>
-                )
-              )
+                  <span className="text-sm font-semibold text-gray-900">
+                    {item.count.toLocaleString("en-BD")}
+                  </span>
+                </div>
+              ))
             )}
           </div>
         </div>
 
-        {/* =================================================
-            STOCK
-        ================================================= */}
-
-        <div className="bg-white border border-gray-100 rounded-xl shadow-sm p-5">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h2 className="font-semibold text-gray-900">
+        {/* Stock */}
+        <div className="min-w-0 rounded-2xl border border-gray-100 bg-white p-4 sm:p-5 shadow-sm">
+          <div className="mb-4 flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h2 className="text-base font-semibold text-gray-900">
                 স্টক স্ট্যাটাস
               </h2>
 
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="mt-1 text-xs text-gray-500">
                 যেসব product বর্তমানে stock নেই
               </p>
             </div>
 
             <Link
               href="/admin/products"
-              className="text-xs text-brand-600 hover:underline"
+              className="shrink-0 text-xs font-medium text-brand-600 hover:underline"
             >
               প্রোডাক্ট দেখুন
             </Link>
           </div>
 
-          {data.lowStockProducts
-            .length === 0 ? (
-            <div className="rounded-lg bg-green-50 border border-green-100 p-4">
+          {data.lowStockProducts.length === 0 ? (
+            <div className="rounded-xl border border-green-100 bg-green-50 p-4">
               <p className="text-sm font-medium text-green-700">
                 সব প্রোডাক্ট বর্তমানে Stock আছে।
               </p>
             </div>
           ) : (
             <div className="space-y-2">
-              {data.lowStockProducts.map(
-                (product) => (
-                  <div
-                    key={product.id}
-                    className="flex items-center justify-between border border-red-50 bg-red-50/40 rounded-lg px-3 py-2.5"
-                  >
-                    <span className="text-sm text-gray-800">
-                      {product.name}
-                    </span>
+              {data.lowStockProducts.map((product) => (
+                <div
+                  key={product.id}
+                  className="flex min-w-0 items-center justify-between gap-3 rounded-xl border border-red-100 bg-red-50/50 px-3 py-3"
+                >
+                  <span className="min-w-0 truncate text-sm text-gray-800">
+                    {product.name}
+                  </span>
 
-                    <span className="text-xs font-semibold text-red-600 bg-red-100 px-2.5 py-1 rounded-full">
-                      Out of Stock
-                    </span>
-                  </div>
-                )
-              )}
+                  <span className="shrink-0 rounded-full bg-red-100 px-2.5 py-1 text-[10px] sm:text-xs font-semibold text-red-600">
+                    Out of Stock
+                  </span>
+                </div>
+              ))}
             </div>
           )}
         </div>
-      </div>
+      </section>
 
-      {/* ===================================================
+      {/* =====================================================
           RECENT ORDERS
-      =================================================== */}
+      ===================================================== */}
 
-      <div className="bg-white border border-gray-100 rounded-xl shadow-sm overflow-hidden">
-        <div className="p-5 flex items-center justify-between border-b border-gray-100">
-          <div>
-            <h2 className="font-semibold text-gray-900">
+      <section className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
+        <div className="flex items-center justify-between gap-3 border-b border-gray-100 p-4 sm:p-5">
+          <div className="min-w-0">
+            <h2 className="text-base font-semibold text-gray-900">
               সাম্প্রতিক অর্ডার
             </h2>
 
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="mt-1 text-xs text-gray-500">
               সর্বশেষ ৫টি অর্ডার
             </p>
           </div>
 
           <Link
             href="/admin/orders"
-            className="text-sm text-brand-600 hover:underline"
+            className="shrink-0 text-xs sm:text-sm font-medium text-brand-600 hover:underline"
           >
             সব দেখুন
           </Link>
         </div>
 
-        {data.recentOrders.length ===
-        0 ? (
+        {data.recentOrders.length === 0 ? (
           <div className="p-6 text-center text-sm text-gray-400">
             কোনো অর্ডার নেই।
           </div>
         ) : (
-          <div className="divide-y divide-gray-50">
-            {data.recentOrders.map(
-              (order) => (
-                <div
-                  key={order.id}
-                  className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-5 py-4"
-                >
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">
-                      {order.orderNumber}
-                    </p>
+          <div className="divide-y divide-gray-100">
+            {data.recentOrders.map((order) => (
+              <div
+                key={order.id}
+                className="grid grid-cols-[1fr_auto] items-center gap-3 px-4 py-4 sm:flex sm:justify-between sm:px-5"
+              >
+                {/* Order info */}
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-gray-900">
+                    {order.orderNumber}
+                  </p>
 
-                    <p className="text-xs text-gray-400 mt-1">
-                      {new Date(
-                        order.createdAt
-                      ).toLocaleDateString(
-                        "bn-BD"
-                      )}
-                    </p>
-                  </div>
-
-                  <span
-                    className={`w-fit text-xs font-medium px-2.5 py-1 rounded-full ${
-                      STATUS_STYLES[
-                        order.status
-                      ] ??
-                      "bg-gray-50 text-gray-600"
-                    }`}
-                  >
-                    {STATUS_LABELS_BN[
-                      order.status
-                    ] ??
-                      order.status}
-                  </span>
-
-                  <span className="text-sm font-semibold text-gray-900">
-                    {formatBDT(
-                      order.total
-                    )}
-                  </span>
+                  <p className="mt-1 text-[11px] text-gray-400">
+                    {new Date(
+                      order.createdAt
+                    ).toLocaleDateString("bn-BD")}
+                  </p>
                 </div>
-              )
-            )}
+
+                {/* Status */}
+                <span
+                  className={`w-fit shrink-0 rounded-full border px-2.5 py-1 text-[10px] sm:text-xs font-medium ${
+                    STATUS_STYLES[order.status] ??
+                    "bg-gray-50 text-gray-600 border-gray-100"
+                  }`}
+                >
+                  {STATUS_LABELS_BN[order.status] ??
+                    order.status}
+                </span>
+
+                {/* Price */}
+                <span className="col-start-2 row-start-1 text-right text-sm font-bold text-gray-900 sm:col-auto sm:row-auto">
+                  {formatBDT(order.total)}
+                </span>
+              </div>
+            ))}
           </div>
         )}
-      </div>
+      </section>
     </div>
   );
 }

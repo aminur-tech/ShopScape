@@ -1,79 +1,198 @@
 import { BannerCarousel } from "@/components/site/BannerCarousel";
 import { CategorySidebar } from "@/components/site/CategorySidebar";
 import { ProductSection } from "@/components/site/ProductSection";
+
 import { apiFetch } from "@/lib/api";
-import type { Category, Product } from "@/lib/types";
 
-async function getCategories() {
+import type {
+  Category,
+  Product,
+} from "@/lib/types";
+
+/* -------------------------------------------------------------------------- */
+/* Constants                                                                  */
+/* -------------------------------------------------------------------------- */
+
+const PRODUCTS_PER_PAGE = 8;
+
+/* -------------------------------------------------------------------------- */
+/* Types                                                                      */
+/* -------------------------------------------------------------------------- */
+
+type CategoryWithChildren = Category & {
+  children?: CategoryWithChildren[];
+};
+
+type ProductPagination = {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+};
+
+type CategoryProducts = {
+  products: Product[];
+  pagination: ProductPagination;
+};
+
+/* -------------------------------------------------------------------------- */
+/* Get Categories                                                             */
+/* -------------------------------------------------------------------------- */
+
+async function getCategories(): Promise<
+  CategoryWithChildren[]
+> {
   try {
-    const data = await apiFetch<{
-      categories: Category[];
-    }>("/categories");
+    const data =
+      await apiFetch<{
+        categories: CategoryWithChildren[];
+      }>("/categories");
 
-    return data.categories;
+    return data.categories ?? [];
   } catch {
     return [];
   }
 }
+
+/* -------------------------------------------------------------------------- */
+/* Get Products                                                               */
+/* -------------------------------------------------------------------------- */
 
 async function getProductsByCategory(
-  slug: string
-) {
+  slug: string,
+): Promise<CategoryProducts> {
   try {
-    const data = await apiFetch<{
-      products: Product[];
-    }>(
-      `/products?category=${encodeURIComponent(
-        slug
-      )}&limit=8`
-    );
+    const data =
+      await apiFetch<{
+        products: Product[];
+        pagination?: ProductPagination;
+      }>(
+        `/products?category=${encodeURIComponent(
+          slug,
+        )}&page=1&limit=${PRODUCTS_PER_PAGE}`,
+      );
 
-    return data.products;
+    const products =
+      data.products ?? [];
+
+    return {
+      products,
+
+      pagination:
+        data.pagination ?? {
+          page: 1,
+          limit: PRODUCTS_PER_PAGE,
+          total: products.length,
+          totalPages: products.length
+            ? Math.ceil(
+                products.length /
+                  PRODUCTS_PER_PAGE,
+              )
+            : 0,
+        },
+    };
   } catch {
-    return [];
+    return {
+      products: [],
+
+      pagination: {
+        page: 1,
+        limit: PRODUCTS_PER_PAGE,
+        total: 0,
+        totalPages: 0,
+      },
+    };
   }
 }
+
+/* -------------------------------------------------------------------------- */
+/* Home Page                                                                  */
+/* -------------------------------------------------------------------------- */
 
 export default async function HomePage() {
   const categories =
     await getCategories();
 
+  /* ------------------------------------------------------------------------ */
+  /* Load Category Products                                                   */
+  /* ------------------------------------------------------------------------ */
+
   const sections =
     await Promise.all(
-      categories.map(async (category) => ({
-        category,
-        products:
-          await getProductsByCategory(
-            category.slug
-          ),
-      }))
+      categories.map(
+        async (category) => {
+          const result =
+            await getProductsByCategory(
+              category.slug,
+            );
+
+          return {
+            category,
+
+            products:
+              result.products,
+
+            pagination:
+              result.pagination,
+
+            subcategories:
+              category.children ?? [],
+          };
+        },
+      ),
     );
 
-  /*
-   * যেসব category-তে product আছে
-   * শুধু সেগুলো দেখাবো।
-   */
+  /* ------------------------------------------------------------------------ */
+  /* Only Categories With Products                                            */
+  /* ------------------------------------------------------------------------ */
 
   const availableSections =
     sections.filter(
       (section) =>
-        section.products.length > 0
+        section.products.length > 0,
     );
 
+  /* ------------------------------------------------------------------------ */
+  /* Render                                                                   */
+  /* ------------------------------------------------------------------------ */
+
   return (
-    <div className="flex gap-6">
-      {/* Sidebar */}
+    <div
+      className="
+        flex
+        w-full
+        items-start
+        gap-4
+        lg:gap-6
+      "
+    >
+      {/* ================================================================== */}
+      {/* Sidebar                                                             */}
+      {/* ================================================================== */}
+
       <CategorySidebar />
 
-      <div className="min-w-0 flex-1">
-        {/* Banner */}
+      {/* ================================================================== */}
+      {/* Main Content                                                        */}
+      {/* ================================================================== */}
+
+      <main className="min-w-0 flex-1">
+        {/* ---------------------------------------------------------------- */}
+        {/* Banner                                                            */}
+        {/* ---------------------------------------------------------------- */}
+
         <BannerCarousel />
 
-        {/* Category Products */}
+        {/* ---------------------------------------------------------------- */}
+        {/* Category Sections                                                 */}
+        {/* ---------------------------------------------------------------- */}
+
         {availableSections.map(
           ({
             category,
             products,
+            pagination,
+            subcategories,
           }) => (
             <ProductSection
               key={category.id}
@@ -82,20 +201,60 @@ export default async function HomePage() {
                 category.slug
               }
               products={products}
+              pagination={
+                pagination
+              }
+              subcategories={
+                subcategories
+              }
             />
-          )
+          ),
         )}
 
-        {/* No products */}
+        {/* ---------------------------------------------------------------- */}
+        {/* Empty State                                                       */}
+        {/* ---------------------------------------------------------------- */}
+
         {availableSections.length ===
           0 && (
-          <p className="mt-8 text-center text-gray-500">
-            এখনো কোনো প্রোডাক্ট যোগ করা
-            হয়নি। অ্যাডমিন প্যানেল থেকে
-            প্রোডাক্ট যোগ করুন।
-          </p>
+          <div
+            className="
+              mt-10
+              rounded-xl
+              border
+              border-dashed
+              border-gray-300
+              bg-gray-50
+              px-4
+              py-10
+              text-center
+            "
+          >
+            <p
+              className="
+                text-sm
+                text-gray-500
+                sm:text-base
+              "
+            >
+              এখনো কোনো প্রোডাক্ট
+              যোগ করা হয়নি।
+            </p>
+
+            <p
+              className="
+                mt-1
+                text-xs
+                text-gray-400
+                sm:text-sm
+              "
+            >
+              অ্যাডমিন প্যানেল থেকে
+              প্রোডাক্ট যোগ করুন।
+            </p>
+          </div>
         )}
-      </div>
+      </main>
     </div>
   );
 }

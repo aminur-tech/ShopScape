@@ -4,8 +4,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-import { useCart } from "@/lib/cart-context";
 import { useAuth } from "@/lib/auth-context";
+import { useCart } from "@/lib/cart-context";
 
 export function Header() {
   const router = useRouter();
@@ -13,6 +13,7 @@ export function Header() {
   const { user } = useAuth();
 
   const [query, setQuery] = useState("");
+  const [menuOpen, setMenuOpen] = useState(false);
 
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
@@ -24,79 +25,258 @@ export function Header() {
         ? `/products?q=${encodeURIComponent(trimmedQuery)}`
         : "/products"
     );
+
+    setMenuOpen(false);
   }
 
   return (
-    <header className="bg-white">
-      <div className="container-page flex items-center gap-6 py-4">
-        {/* LOGO */}
-        <Link
-          href="/"
-          className="shrink-0 text-2xl font-bold text-brand-600"
-        >
-          ShopScape
-        </Link>
+    <header className="sticky top-0 z-50 border-b border-gray-100 bg-white/95 backdrop-blur">
+      <div className="container-page">
+        {/* ================= TOP HEADER ================= */}
+        <div className="flex h-16 items-center gap-3 sm:h-[72px] sm:gap-6">
+          {/* MOBILE MENU */}
+          <button
+            type="button"
+            onClick={() => setMenuOpen((prev) => !prev)}
+            aria-label={menuOpen ? "মেনু বন্ধ করুন" : "মেনু খুলুন"}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-gray-700 transition hover:bg-gray-100 sm:hidden"
+          >
+            {menuOpen ? (
+              <svg
+                className="h-6 w-6"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path d="M6 6l12 12M18 6L6 18" />
+              </svg>
+            ) : (
+              <svg
+                className="h-6 w-6"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            )}
+          </button>
 
-        {/* SEARCH */}
+          {/* LOGO */}
+          <Link
+            href="/"
+            className="shrink-0 text-xl font-extrabold tracking-tight text-brand-600 sm:text-2xl"
+            onClick={() => setMenuOpen(false)}
+          >
+            Shop<span className="text-gray-900">Scape</span>
+          </Link>
+
+          {/* DESKTOP SEARCH */}
+          <form
+            onSubmit={handleSearch}
+            className="hidden min-w-0 max-w-2xl flex-1 md:flex"
+          >
+            <div className="relative w-full">
+              <svg
+                className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <circle cx="11" cy="11" r="7" />
+                <path d="m20 20-4-4" />
+              </svg>
+
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                type="search"
+                placeholder="পণ্য খুঁজুন..."
+                aria-label="পণ্য খুঁজুন"
+                className="h-11 w-full rounded-l-xl border border-gray-200 bg-gray-50 pl-10 pr-4 text-sm text-gray-800 outline-none transition placeholder:text-gray-400 focus:border-brand-500 focus:bg-white focus:ring-2 focus:ring-brand-500/10"
+              />
+            </div>
+
+            <button
+              type="submit"
+              className="h-11 shrink-0 rounded-r-xl bg-brand-500 px-5 text-sm font-semibold text-white transition hover:bg-brand-600 active:scale-[0.98]"
+            >
+              সার্চ
+            </button>
+          </form>
+
+          {/* ACTIONS */}
+          <nav
+            aria-label="প্রধান অ্যাকশন"
+            className="ml-auto flex items-center gap-1 sm:gap-2"
+          >
+            {/* OFFERS */}
+            <Link
+              href="/products?featured=true"
+              aria-label="অফার"
+              className="group flex h-10 w-10 items-center justify-center rounded-xl text-gray-600 transition hover:bg-brand-50 hover:text-brand-600"
+            >
+              <svg
+                className="h-5 w-5 transition group-hover:scale-110"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+              >
+                <path d="M20 12v8a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-8" />
+                <path d="M2 7h20v5H2z" />
+                <path d="M12 7v14" />
+                <path d="M12 7H7.5a2.5 2.5 0 1 1 2.5-2.5C10 6 12 7 12 7Z" />
+                <path d="M12 7h4.5A2.5 2.5 0 1 0 14 4.5C14 6 12 7 12 7Z" />
+              </svg>
+            </Link>
+
+            {/* WISHLIST */}
+            <Link
+              href="/account?tab=wishlist"
+              aria-label="পছন্দের তালিকা"
+              className="group hidden h-10 w-10 items-center justify-center rounded-xl text-gray-600 transition hover:bg-red-50 hover:text-red-500 sm:flex"
+            >
+              <svg
+                className="h-5 w-5 transition group-hover:scale-110"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+              >
+                <path d="M20.8 8.7c0 5.5-8.8 10.3-8.8 10.3S3.2 14.2 3.2 8.7A4.7 4.7 0 0 1 12 6.3a4.7 4.7 0 0 1 8.8 2.4Z" />
+              </svg>
+            </Link>
+
+            {/* ACCOUNT */}
+            <Link
+              href={user ? "/account" : "/login"}
+              aria-label={user ? "আমার অ্যাকাউন্ট" : "লগইন"}
+              className="group hidden h-10 w-10 items-center justify-center rounded-xl text-gray-600 transition hover:bg-brand-50 hover:text-brand-600 sm:flex"
+            >
+              <svg
+                className="h-5 w-5 transition group-hover:scale-110"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+              >
+                <circle cx="12" cy="8" r="3.5" />
+                <path d="M5 20c.8-3.3 3.2-5 7-5s6.2 1.7 7 5" />
+              </svg>
+            </Link>
+
+            {/* CART */}
+            <Link
+              href="/cart"
+              aria-label={`কার্ট, ${count} টি পণ্য`}
+              className="group relative flex h-10 w-10 items-center justify-center rounded-xl text-gray-600 transition hover:bg-brand-50 hover:text-brand-600"
+            >
+              <svg
+                className="h-5 w-5 transition group-hover:scale-110"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+              >
+                <path d="M3 4h2l2.2 11h10.6L21 7H6" />
+                <circle cx="9" cy="20" r="1" />
+                <circle cx="18" cy="20" r="1" />
+              </svg>
+
+              {count > 0 && (
+                <span className="absolute -right-0.5 -top-0.5 flex min-h-5 min-w-5 items-center justify-center rounded-full bg-sale px-1 text-[10px] font-bold leading-none text-white ring-2 ring-white">
+                  {count > 99 ? "99+" : count}
+                </span>
+              )}
+            </Link>
+          </nav>
+        </div>
+
+        {/* ================= MOBILE SEARCH ================= */}
         <form
           onSubmit={handleSearch}
-          className="hidden max-w-xl flex-1 sm:flex"
+          className="pb-3 md:hidden"
         >
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            type="text"
-            placeholder="সার্চ করুন"
-            className="w-full rounded-l-md border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500"
-          />
+          <div className="relative">
+            <svg
+              className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <circle cx="11" cy="11" r="7" />
+              <path d="m20 20-4-4" />
+            </svg>
 
-          <button
-            type="submit"
-            aria-label="সার্চ করুন"
-            className="rounded-r-md bg-brand-500 px-4 text-white transition hover:bg-brand-600"
-          >
-            🔍
-          </button>
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              type="search"
+              placeholder="পণ্য খুঁজুন..."
+              aria-label="পণ্য খুঁজুন"
+              className="h-11 w-full rounded-xl border border-gray-200 bg-gray-50 pl-10 pr-20 text-sm outline-none transition focus:border-brand-500 focus:bg-white focus:ring-2 focus:ring-brand-500/10"
+            />
+
+            <button
+              type="submit"
+              className="absolute right-1 top-1 flex h-9 items-center justify-center rounded-lg bg-brand-500 px-4 text-xs font-semibold text-white transition hover:bg-brand-600"
+            >
+              সার্চ
+            </button>
+          </div>
         </form>
 
-        {/* ACTIONS */}
-        <div className="ml-auto flex items-center gap-4 text-brand-600">
-          <Link
-            href="/products?featured=true"
-            aria-label="অফার"
-            className="text-xl transition hover:scale-110"
-          >
-            🎁
-          </Link>
+        {/* ================= MOBILE MENU ================= */}
+        {menuOpen && (
+          <div className="border-t border-gray-100 py-3 sm:hidden">
+            <nav className="grid gap-1">
+              <Link
+                href="/"
+                onClick={() => setMenuOpen(false)}
+                className="rounded-lg px-3 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50 hover:text-brand-600"
+              >
+                হোম
+              </Link>
 
-          <Link
-            href="/account?tab=wishlist"
-            aria-label="পছন্দের তালিকা"
-            className="text-xl transition hover:scale-110"
-          >
-            ❤️
-          </Link>
+              <Link
+                href="/products"
+                onClick={() => setMenuOpen(false)}
+                className="rounded-lg px-3 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50 hover:text-brand-600"
+              >
+                সকল প্রোডাক্ট
+              </Link>
 
-          <Link
-            href={user ? "/account" : "/login"}
-            aria-label="অ্যাকাউন্ট"
-            className="text-xl transition hover:scale-110"
-          >
-            👤
-          </Link>
+              <Link
+                href="/products?featured=true"
+                onClick={() => setMenuOpen(false)}
+                className="rounded-lg px-3 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50 hover:text-brand-600"
+              >
+                অফার
+              </Link>
 
-          <Link
-            href="/cart"
-            aria-label="কার্ট"
-            className="relative text-xl"
-          >
-            🛍️
+              <Link
+                href="/account?tab=wishlist"
+                onClick={() => setMenuOpen(false)}
+                className="rounded-lg px-3 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50 hover:text-brand-600"
+              >
+                পছন্দের তালিকা
+              </Link>
 
-            <span className="absolute -right-2 -top-2 flex h-4 w-4 items-center justify-center rounded-full bg-sale text-[10px] font-bold text-white">
-              {count}
-            </span>
-          </Link>
-        </div>
+              <Link
+                href={user ? "/account" : "/login"}
+                onClick={() => setMenuOpen(false)}
+                className="rounded-lg px-3 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50 hover:text-brand-600"
+              >
+                {user ? "আমার অ্যাকাউন্ট" : "লগইন"}
+              </Link>
+            </nav>
+          </div>
+        )}
       </div>
     </header>
   );
