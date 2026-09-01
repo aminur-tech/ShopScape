@@ -16,7 +16,6 @@ export class ApiError extends Error {
     super(message);
 
     this.status = status;
-
     this.name = "ApiError";
   }
 }
@@ -38,6 +37,8 @@ type FetchOptions = {
   token?: string | null;
 
   cache?: RequestCache;
+
+  headers?: Record<string, string>;
 };
 
 /* =========================================================
@@ -48,22 +49,24 @@ export async function apiFetch<T>(
   path: string,
   options: FetchOptions = {}
 ): Promise<T> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+
+    ...(options.headers ?? {}),
+  };
+
+  if (options.token) {
+    headers.Authorization =
+      `Bearer ${options.token}`;
+  }
+
   const res = await fetch(
     `${API_URL}${path}`,
     {
       method:
         options.method ?? "GET",
 
-      headers: {
-        "Content-Type":
-          "application/json",
-
-        ...(options.token
-          ? {
-              Authorization: `Bearer ${options.token}`,
-            }
-          : {}),
-      },
+      headers,
 
       body:
         options.body !== undefined
@@ -88,7 +91,6 @@ export async function apiFetch<T>(
       data.error ??
         data.message ??
         "কিছু একটা সমস্যা হয়েছে",
-
       res.status
     );
   }
@@ -140,22 +142,26 @@ export async function uploadFiles(
     );
   }
 
+  const headers: Record<
+    string,
+    string
+  > = {};
+
+  if (token) {
+    headers.Authorization =
+      `Bearer ${token}`;
+  }
+
   const res = await fetch(
     `${API_URL}${path}`,
     {
       method: "POST",
 
-      headers: token
-        ? {
-            Authorization:
-              `Bearer ${token}`,
-          }
-        : undefined,
+      headers,
 
       /*
-       * Do NOT set Content-Type.
-       * Browser will automatically
-       * add multipart boundary.
+       * Content-Type manually set করবেন না।
+       * Browser নিজে multipart boundary যোগ করবে।
        */
       body: formData,
     }
@@ -171,7 +177,6 @@ export async function uploadFiles(
       data.error ??
         data.message ??
         "ছবি আপলোড ব্যর্থ হয়েছে",
-
       res.status
     );
   }

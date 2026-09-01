@@ -9,31 +9,7 @@ import {
   type ReactNode,
 } from "react";
 
-import type { Product } from "@/lib/types";
-
-/*
-|--------------------------------------------------------------------------
-| Cart Item
-|--------------------------------------------------------------------------
-*/
-
-export type CartItem = {
-  cartLineId: string;
-
-  productId: string;
-  name: string;
-
-  price: number;
-
-  image: string | null;
-
-  selectedColor: string | null;
-  selectedSize: string | null;
-
-  maxStock: number;
-
-  quantity: number;
-};
+import type { CartLine } from "@/lib/types";
 
 /*
 |--------------------------------------------------------------------------
@@ -42,42 +18,24 @@ export type CartItem = {
 */
 
 type CartContextType = {
-  items: CartItem[];
+  items: CartLine[];
 
-  /**
-   * Total quantity of all cart items.
-   *
-   * Example:
-   * Product A = 2
-   * Product B = 3
-   * count = 5
-   */
   count: number;
 
-  /**
-   * Add product to cart.
-   */
   addItem: (
-    item: Omit<CartItem, "quantity">,
+    item: Omit<CartLine, "quantity">,
     quantity?: number
   ) => void;
 
-  /**
-   * Remove cart item using cartLineId.
-   */
-  removeItem: (cartLineId: string) => void;
+  removeItem: (
+    cartLineId: string
+  ) => void;
 
-  /**
-   * Update cart item quantity.
-   */
   updateQuantity: (
     cartLineId: string,
     quantity: number
   ) => void;
 
-  /**
-   * Remove everything from cart.
-   */
   clearCart: () => void;
 };
 
@@ -94,7 +52,7 @@ const CartContext =
 
 /*
 |--------------------------------------------------------------------------
-| Local Storage Key
+| Local Storage
 |--------------------------------------------------------------------------
 */
 
@@ -111,16 +69,15 @@ export function CartProvider({
 }: {
   children: ReactNode;
 }) {
-  const [items, setItems] = useState<CartItem[]>(
-    []
-  );
+  const [items, setItems] =
+    useState<CartLine[]>([]);
 
   const [hydrated, setHydrated] =
     useState(false);
 
   /*
   |--------------------------------------------------------------------------
-  | Load cart from localStorage
+  | Load Cart
   |--------------------------------------------------------------------------
   */
 
@@ -151,7 +108,7 @@ export function CartProvider({
 
   /*
   |--------------------------------------------------------------------------
-  | Save cart to localStorage
+  | Save Cart
   |--------------------------------------------------------------------------
   */
 
@@ -178,11 +135,10 @@ export function CartProvider({
   */
 
   function addItem(
-    item: Omit<CartItem, "quantity">,
+    item: Omit<CartLine, "quantity">,
     quantity = 1
   ) {
     if (quantity <= 0) return;
-
     if (item.maxStock <= 0) return;
 
     setItems((currentItems) => {
@@ -194,17 +150,18 @@ export function CartProvider({
         );
 
       /*
-      |--------------------------------------------------------------------------
-      | Existing item
-      |--------------------------------------------------------------------------
+      |----------------------------------------------------------------------
+      | Existing Item
+      |----------------------------------------------------------------------
       */
 
       if (existingItem) {
-        const newQuantity = Math.min(
-          existingItem.quantity +
-            quantity,
-          existingItem.maxStock
-        );
+        const newQuantity =
+          Math.min(
+            existingItem.quantity +
+              quantity,
+            existingItem.maxStock
+          );
 
         return currentItems.map(
           (cartItem) =>
@@ -220,9 +177,9 @@ export function CartProvider({
       }
 
       /*
-      |--------------------------------------------------------------------------
-      | New item
-      |--------------------------------------------------------------------------
+      |----------------------------------------------------------------------
+      | New Item
+      |----------------------------------------------------------------------
       */
 
       const safeQuantity =
@@ -272,9 +229,9 @@ export function CartProvider({
   ) {
     setItems((currentItems) => {
       /*
-      |--------------------------------------------------------------------------
-      | Quantity 0 or less = remove item
-      |--------------------------------------------------------------------------
+      |----------------------------------------------------------------------
+      | Quantity <= 0
+      |----------------------------------------------------------------------
       */
 
       if (quantity <= 0) {
@@ -284,6 +241,12 @@ export function CartProvider({
             cartLineId
         );
       }
+
+      /*
+      |----------------------------------------------------------------------
+      | Update
+      |----------------------------------------------------------------------
+      */
 
       return currentItems.map(
         (item) => {
@@ -322,16 +285,8 @@ export function CartProvider({
 
   /*
   |--------------------------------------------------------------------------
-  | Total Count
+  | Total Quantity
   |--------------------------------------------------------------------------
-  |
-  | Example:
-  |
-  | T-Shirt = 2
-  | Saree   = 3
-  |
-  | count = 5
-  |
   */
 
   const count = useMemo(() => {
@@ -352,7 +307,6 @@ export function CartProvider({
     () => ({
       items,
       count,
-
       addItem,
       removeItem,
       updateQuantity,
@@ -368,7 +322,9 @@ export function CartProvider({
   */
 
   return (
-    <CartContext.Provider value={value}>
+    <CartContext.Provider
+      value={value}
+    >
       {children}
     </CartContext.Provider>
   );
@@ -376,7 +332,7 @@ export function CartProvider({
 
 /*
 |--------------------------------------------------------------------------
-| useCart Hook
+| useCart
 |--------------------------------------------------------------------------
 */
 

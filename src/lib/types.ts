@@ -192,7 +192,7 @@ export type CartLine = {
   name: string;
   price: number;
 
-  image?: string | null;
+  image?: string;
 
   quantity: number;
   maxStock: number;
