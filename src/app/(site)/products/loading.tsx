@@ -1,0 +1,3 @@
+export default function ProductsLoading() {
+  return <div className="flex gap-6"><div className="hidden w-56 shrink-0 animate-pulse rounded-xl bg-gray-100 md:block" /><div className="min-w-0 flex-1"><div className="mb-6 h-7 w-64 animate-pulse rounded bg-gray-100" /><div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">{Array.from({ length: 8 }, (_, index) => <div key={index} className="overflow-hidden rounded-md border border-gray-100"><div className="aspect-square animate-pulse bg-gray-100" /><div className="space-y-2 p-3"><div className="h-4 animate-pulse rounded bg-gray-100" /><div className="h-4 w-2/3 animate-pulse rounded bg-gray-100" /></div></div>)}</div></div></div>;
+}

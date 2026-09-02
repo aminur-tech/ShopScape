@@ -1,6 +1,6 @@
 export function TopBar() {
   const items = [
-    { icon: "📞", label: "সাপোর্ট সেন্টার: 01327694078 (whatsapp)" },
+    { icon: "📞", label: "সাপোর্ট সেন্টার: 01632370620 (whatsapp)" },
     { icon: "💳", label: "ক্যাশ অন ডেলিভারি" },
     { icon: "✔️", label: "মানসম্মত প্রোডাক্ট" },
     { icon: "✉️", label: "সারা বাংলাদেশ হোম ডেলিভারি" },

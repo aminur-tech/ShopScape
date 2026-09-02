@@ -1,15 +1,23 @@
+
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useState } from "react";
+import {
+  Suspense,
+  useState,
+} from "react";
+import {
+  usePathname,
+  useSearchParams,
+} from "next/navigation";
 
 import { useAuth } from "@/lib/auth-context";
 import { useCart } from "@/lib/cart-context";
+import { SmartSearch } from "@/components/site/smart-search";
 
-/* -------------------------------------------------------------------------- */
-/* Header                                                                     */
-/* -------------------------------------------------------------------------- */
+/* ==========================================================================
+   HEADER
+========================================================================== */
 
 export function Header() {
   return (
@@ -19,9 +27,9 @@ export function Header() {
   );
 }
 
-/* -------------------------------------------------------------------------- */
-/* Header Fallback                                                            */
-/* -------------------------------------------------------------------------- */
+/* ==========================================================================
+   FALLBACK
+========================================================================== */
 
 function HeaderFallback() {
   return (
@@ -40,50 +48,28 @@ function HeaderFallback() {
   );
 }
 
-/* -------------------------------------------------------------------------- */
-/* Header Content                                                             */
-/* -------------------------------------------------------------------------- */
+/* ==========================================================================
+   HEADER CONTENT
+========================================================================== */
 
 function HeaderContent() {
-  const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
   const { count } = useCart();
   const { user } = useAuth();
 
-  const [query, setQuery] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
 
-  /* ------------------------------------------------------------------------ */
-  /* Search                                                                   */
-  /* ------------------------------------------------------------------------ */
-
-  function handleSearch(e: React.FormEvent) {
-    e.preventDefault();
-
-    const trimmedQuery = query.trim();
-
-    router.push(
-      trimmedQuery
-        ? `/products?q=${encodeURIComponent(trimmedQuery)}`
-        : "/products",
-    );
-
-    setMenuOpen(false);
-  }
-
-  /* ------------------------------------------------------------------------ */
-  /* Active Route                                                             */
-  /* ------------------------------------------------------------------------ */
+  /* ==========================================================================
+     ACTIVE ROUTE
+  ========================================================================== */
 
   function isActive(href: string) {
-    /* Home */
     if (href === "/") {
       return pathname === "/";
     }
 
-    /* Products */
     if (href === "/products") {
       return (
         pathname === "/products" &&
@@ -91,7 +77,6 @@ function HeaderContent() {
       );
     }
 
-    /* Featured / Offers */
     if (href === "/products?featured=true") {
       return (
         pathname === "/products" &&
@@ -99,7 +84,6 @@ function HeaderContent() {
       );
     }
 
-    /* Wishlist */
     if (href === "/account?tab=wishlist") {
       return (
         pathname === "/account" &&
@@ -107,7 +91,6 @@ function HeaderContent() {
       );
     }
 
-    /* Account */
     if (href === "/account") {
       return (
         pathname === "/account" &&
@@ -115,13 +98,12 @@ function HeaderContent() {
       );
     }
 
-    /* Normal routes */
     return pathname.startsWith(href);
   }
 
-  /* ------------------------------------------------------------------------ */
-  /* Mobile Menu Item Class                                                   */
-  /* ------------------------------------------------------------------------ */
+  /* ==========================================================================
+     MOBILE ITEM CLASS
+  ========================================================================== */
 
   function mobileItemClass(active: boolean) {
     return `
@@ -132,8 +114,7 @@ function HeaderContent() {
       px-3
       py-3
       text-sm
-      transition-all
-      duration-200
+      transition
       ${
         active
           ? "bg-brand-50 font-bold text-brand-600"
@@ -142,25 +123,27 @@ function HeaderContent() {
     `;
   }
 
-  /* ------------------------------------------------------------------------ */
-  /* Render                                                                   */
-  /* ------------------------------------------------------------------------ */
+  /* ==========================================================================
+     RENDER
+  ========================================================================== */
 
   return (
     <header className="sticky top-0 z-50 border-b border-gray-100 bg-white/95 backdrop-blur">
       <div className="container-page">
 
-        {/* ================================================================== */}
-        {/* TOP HEADER                                                         */}
-        {/* ================================================================== */}
+        {/* ====================================================================
+            TOP HEADER
+        ==================================================================== */}
 
-        <div className="flex h-16 items-center gap-3 sm:h-[72px] sm:gap-6">
+        <div className="flex h-16 items-center gap-3 sm:h-[72px] sm:gap-5">
 
-          {/* MOBILE MENU BUTTON */}
+          {/* MOBILE MENU */}
 
           <button
             type="button"
-            onClick={() => setMenuOpen((prev) => !prev)}
+            onClick={() =>
+              setMenuOpen((prev) => !prev)
+            }
             aria-label={
               menuOpen
                 ? "মেনু বন্ধ করুন"
@@ -184,31 +167,9 @@ function HeaderContent() {
             "
           >
             {menuOpen ? (
-              <svg
-                className="h-6 w-6"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <path
-                  strokeLinecap="round"
-                  d="M6 6l12 12M18 6L6 18"
-                />
-              </svg>
+              <CloseIcon />
             ) : (
-              <svg
-                className="h-6 w-6"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <path
-                  strokeLinecap="round"
-                  d="M4 6h16M4 12h16M4 18h16"
-                />
-              </svg>
+              <MenuIcon />
             )}
           </button>
 
@@ -234,135 +195,22 @@ function HeaderContent() {
 
           {/* DESKTOP SEARCH */}
 
-          <form
-            onSubmit={handleSearch}
-            className="
-              hidden
-              min-w-0
-              max-w-2xl
-              flex-1
-              md:flex
-            "
-          >
-            <div className="relative w-full">
-
-              <svg
-                className="
-                  pointer-events-none
-                  absolute
-                  left-3
-                  top-1/2
-                  h-5
-                  w-5
-                  -translate-y-1/2
-                  text-gray-400
-                "
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <circle cx="11" cy="11" r="7" />
-                <path d="m20 20-4-4" />
-              </svg>
-
-              <input
-                value={query}
-                onChange={(e) =>
-                  setQuery(e.target.value)
-                }
-                type="search"
-                placeholder="পণ্য খুঁজুন..."
-                aria-label="পণ্য খুঁজুন"
-                className="
-                  h-11
-                  w-full
-                  rounded-l-xl
-                  border
-                  border-gray-200
-                  bg-gray-50
-                  pl-10
-                  pr-4
-                  text-sm
-                  text-gray-800
-                  outline-none
-                  transition
-                  placeholder:text-gray-400
-                  focus:border-brand-500
-                  focus:bg-white
-                  focus:ring-2
-                  focus:ring-brand-500/10
-                "
-              />
-            </div>
-
-            <button
-              type="submit"
-              className="
-                h-11
-                shrink-0
-                rounded-r-xl
-                bg-brand-500
-                px-5
-                text-sm
-                font-semibold
-                text-white
-                transition
-                hover:bg-brand-600
-                active:scale-[0.98]
-              "
-            >
-              সার্চ
-            </button>
-          </form>
+          <div className="hidden flex-1 md:block">
+            <SmartSearch />
+          </div>
 
           {/* ACTIONS */}
 
           <nav
             aria-label="প্রধান অ্যাকশন"
-            className="
-              ml-auto
-              flex
-              items-center
-              gap-1
-              sm:gap-2
-            "
+            className="ml-auto flex items-center gap-1 sm:gap-2"
           >
-
-            {/* OFFER */}
-
             <Link
               href="/products?featured=true"
               aria-label="অফার"
-              className={`
-                group
-                flex
-                h-10
-                w-10
-                items-center
-                justify-center
-                rounded-xl
-                transition
-                ${
-                  isActive("/products?featured=true")
-                    ? "bg-brand-50 text-brand-600"
-                    : "text-gray-600 hover:bg-brand-50 hover:text-brand-600"
-                }
-              `}
+              className={`group flex h-10 w-10 items-center justify-center rounded-xl transition ${isActive("/products?featured=true") ? "bg-brand-50 text-brand-600" : "text-gray-600 hover:bg-brand-50 hover:text-brand-600"}`}
             >
-              <svg
-                className="h-5 w-5 transition group-hover:scale-110"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-              >
-                <path d="M20 12v8a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-8" />
-                <path d="M2 7h20v5H2z" />
-                <path d="M12 7v14" />
-                <path d="M12 7H7.5a2.5 2.5 0 1 1 2.5-2.5C10 6 12 7 12 7Z" />
-                <path d="M12 7h4.5A2.5 2.5 0 1 0 14 4.5C14 6 12 7 12 7Z" />
-              </svg>
+              <GiftIcon />
             </Link>
 
             {/* WISHLIST */}
@@ -381,27 +229,25 @@ function HeaderContent() {
                 transition
                 sm:flex
                 ${
-                  isActive("/account?tab=wishlist")
+                  isActive(
+                    "/account?tab=wishlist",
+                  )
                     ? "bg-red-50 text-red-500"
                     : "text-gray-600 hover:bg-red-50 hover:text-red-500"
                 }
               `}
             >
-              <svg
-                className="h-5 w-5 transition group-hover:scale-110"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-              >
-                <path d="M20.8 8.7c0 5.5-8.8 10.3-8.8 10.3S3.2 14.2 3.2 8.7A4.7 4.7 0 0 1 12 6.3a4.7 4.7 0 0 1 8.8 2.4Z" />
-              </svg>
+              <HeartIcon />
             </Link>
 
             {/* ACCOUNT */}
 
             <Link
-              href={user ? "/account" : "/login"}
+              href={
+                user
+                  ? "/account"
+                  : "/login"
+              }
               aria-label={
                 user
                   ? "আমার অ্যাকাউন্ট"
@@ -428,20 +274,7 @@ function HeaderContent() {
                 }
               `}
             >
-              <svg
-                className="h-5 w-5 transition group-hover:scale-110"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-              >
-                <circle
-                  cx="12"
-                  cy="8"
-                  r="3.5"
-                />
-                <path d="M5 20c.8-3.3 3.2-5 7-5s6.2 1.7 7 5" />
-              </svg>
+              <UserIcon />
             </Link>
 
             {/* CART */}
@@ -466,17 +299,7 @@ function HeaderContent() {
                 }
               `}
             >
-              <svg
-                className="h-5 w-5 transition group-hover:scale-110"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-              >
-                <path d="M3 4h2l2.2 11h10.6L21 7H6" />
-                <circle cx="9" cy="20" r="1" />
-                <circle cx="18" cy="20" r="1" />
-              </svg>
+              <CartIcon />
 
               {count > 0 && (
                 <span
@@ -500,268 +323,104 @@ function HeaderContent() {
                     ring-white
                   "
                 >
-                  {count > 99 ? "99+" : count}
+                  {count > 99
+                    ? "99+"
+                    : count}
                 </span>
               )}
             </Link>
           </nav>
         </div>
 
-        {/* ================================================================== */}
-        {/* MOBILE SEARCH                                                      */}
-        {/* ================================================================== */}
+        {/* ====================================================================
+            MOBILE SEARCH
+        ==================================================================== */}
 
-        <form
-          onSubmit={handleSearch}
-          className="pb-3 md:hidden"
-        >
-          <div className="relative">
+        <SmartSearch mobile />
 
-            <svg
-              className="
-                pointer-events-none
-                absolute
-                left-3
-                top-1/2
-                h-5
-                w-5
-                -translate-y-1/2
-                text-gray-400
-              "
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <circle cx="11" cy="11" r="7" />
-              <path d="m20 20-4-4" />
-            </svg>
-
-            <input
-              value={query}
-              onChange={(e) =>
-                setQuery(e.target.value)
-              }
-              type="search"
-              placeholder="পণ্য খুঁজুন..."
-              aria-label="পণ্য খুঁজুন"
-              className="
-                h-11
-                w-full
-                rounded-xl
-                border
-                border-gray-200
-                bg-gray-50
-                pl-10
-                pr-20
-                text-sm
-                outline-none
-                transition
-                focus:border-brand-500
-                focus:bg-white
-                focus:ring-2
-                focus:ring-brand-500/10
-              "
-            />
-
-            <button
-              type="submit"
-              className="
-                absolute
-                right-1
-                top-1
-                flex
-                h-9
-                items-center
-                justify-center
-                rounded-lg
-                bg-brand-500
-                px-4
-                text-xs
-                font-semibold
-                text-white
-                transition
-                hover:bg-brand-600
-                active:scale-95
-              "
-            >
-              সার্চ
-            </button>
-          </div>
-        </form>
-
-        {/* ================================================================== */}
-        {/* MOBILE MENU                                                         */}
-        {/* ================================================================== */}
+        {/* ====================================================================
+            MOBILE MENU
+        ==================================================================== */}
 
         {menuOpen && (
           <div className="border-t border-gray-100 py-3 sm:hidden">
-
             <nav
               aria-label="মোবাইল মেনু"
               className="grid gap-1"
             >
-
-              {/* HOME */}
-
-              <Link
+              <MobileLink
                 href="/"
-                onClick={() => setMenuOpen(false)}
-                aria-current={
-                  isActive("/")
-                    ? "page"
-                    : undefined
+                label="হোম"
+                active={isActive("/")}
+                onClick={() =>
+                  setMenuOpen(false)
                 }
-                className={mobileItemClass(
-                  isActive("/"),
-                )}
-              >
-                <span>হোম</span>
+              />
 
-                {isActive("/") && (
-                  <ActiveIndicator />
-                )}
-              </Link>
-
-              {/* PRODUCTS */}
-
-              <Link
+              <MobileLink
                 href="/products"
-                onClick={() => setMenuOpen(false)}
-                aria-current={
-                  isActive("/products")
-                    ? "page"
-                    : undefined
+                label="সকল প্রোডাক্ট"
+                active={isActive(
+                  "/products",
+                )}
+                onClick={() =>
+                  setMenuOpen(false)
                 }
-                className={mobileItemClass(
-                  isActive("/products"),
-                )}
-              >
-                <span>সকল প্রোডাক্ট</span>
+              />
 
-                {isActive("/products") && (
-                  <ActiveIndicator />
-                )}
-              </Link>
-
-              {/* OFFERS */}
-
-              <Link
+              <MobileLink
                 href="/products?featured=true"
-                onClick={() => setMenuOpen(false)}
-                aria-current={
-                  isActive(
-                    "/products?featured=true",
-                  )
-                    ? "page"
-                    : undefined
-                }
-                className={mobileItemClass(
-                  isActive(
-                    "/products?featured=true",
-                  ),
-                )}
-              >
-                <span>অফার</span>
-
-                {isActive(
+                label="অফার"
+                active={isActive(
                   "/products?featured=true",
-                ) && (
-                  <ActiveIndicator />
                 )}
-              </Link>
-
-              {/* WISHLIST */}
-
-              <Link
-                href="/account?tab=wishlist"
-                onClick={() => setMenuOpen(false)}
-                aria-current={
-                  isActive(
-                    "/account?tab=wishlist",
-                  )
-                    ? "page"
-                    : undefined
+                onClick={() =>
+                  setMenuOpen(false)
                 }
-                className={mobileItemClass(
-                  isActive(
-                    "/account?tab=wishlist",
-                  ),
-                )}
-              >
-                <span>পছন্দের তালিকা</span>
+              />
 
-                {isActive(
+              <MobileLink
+                href="/account?tab=wishlist"
+                label="পছন্দের তালিকা"
+                active={isActive(
                   "/account?tab=wishlist",
-                ) && (
-                  <ActiveIndicator />
                 )}
-              </Link>
+                onClick={() =>
+                  setMenuOpen(false)
+                }
+              />
 
-              {/* ACCOUNT / LOGIN */}
-
-              <Link
+              <MobileLink
                 href={
                   user
                     ? "/account"
                     : "/login"
                 }
-                onClick={() => setMenuOpen(false)}
-                aria-current={
-                  isActive(
-                    user
-                      ? "/account"
-                      : "/login",
-                  )
-                    ? "page"
-                    : undefined
-                }
-                className={mobileItemClass(
-                  isActive(
-                    user
-                      ? "/account"
-                      : "/login",
-                  ),
-                )}
-              >
-                <span>
-                  {user
+                label={
+                  user
                     ? "আমার অ্যাকাউন্ট"
-                    : "লগইন"}
-                </span>
-
-                {isActive(
+                    : "লগইন"
+                }
+                active={isActive(
                   user
                     ? "/account"
                     : "/login",
-                ) && (
-                  <ActiveIndicator />
                 )}
-              </Link>
-
-              {/* TRACK ORDER */}
-
-              <Link
-                href="/track-order"
-                onClick={() => setMenuOpen(false)}
-                aria-current={
-                  isActive("/track-order")
-                    ? "page"
-                    : undefined
+                onClick={() =>
+                  setMenuOpen(false)
                 }
-                className={mobileItemClass(
-                  isActive("/track-order"),
-                )}
-              >
-                <span>অর্ডার ট্র্যাকিং</span>
+              />
 
-                {isActive(
+              <MobileLink
+                href="/track-order"
+                label="অর্ডার ট্র্যাকিং"
+                active={isActive(
                   "/track-order",
-                ) && (
-                  <ActiveIndicator />
                 )}
-              </Link>
-
+                onClick={() =>
+                  setMenuOpen(false)
+                }
+              />
             </nav>
           </div>
         )}
@@ -770,22 +429,235 @@ function HeaderContent() {
   );
 }
 
-/* -------------------------------------------------------------------------- */
-/* Active Indicator                                                           */
-/* -------------------------------------------------------------------------- */
+/* ==========================================================================
+   MOBILE LINK
+========================================================================== */
 
-function ActiveIndicator() {
+function MobileLink({
+  href,
+  label,
+  active,
+  onClick,
+}: {
+  href: string;
+  label: string;
+  active: boolean;
+  onClick: () => void;
+}) {
   return (
-    <span
-      className="
-        h-2
-        w-2
-        shrink-0
-        rounded-full
-        bg-brand-500
-        shadow-[0_0_0_3px_rgba(34,197,94,0.10)]
-      "
-      aria-hidden="true"
-    />
+    <Link
+      href={href}
+      onClick={onClick}
+      className={`
+        flex
+        items-center
+        justify-between
+        rounded-xl
+        px-3
+        py-3
+        text-sm
+        transition
+        ${
+          active
+            ? "bg-brand-50 font-bold text-brand-600"
+            : "font-medium text-gray-700 hover:bg-gray-50 hover:text-brand-600"
+        }
+      `}
+    >
+      <span>{label}</span>
+
+      {active && (
+        <span
+          className="
+            h-2
+            w-2
+            rounded-full
+            bg-brand-500
+            shadow-[0_0_0_3px_rgba(34,197,94,0.10)]
+          "
+        />
+      )}
+    </Link>
+  );
+}
+
+/* ==========================================================================
+   ICONS
+========================================================================== */
+
+function MenuIcon() {
+  return (
+    <svg
+      className="h-6 w-6"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+    >
+      <path
+        strokeLinecap="round"
+        d="M4 6h16M4 12h16M4 18h16"
+      />
+    </svg>
+  );
+}
+
+function CloseIcon() {
+  return (
+    <svg
+      className="h-6 w-6"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+    >
+      <path
+        strokeLinecap="round"
+        d="M6 6l12 12M18 6L6 18"
+      />
+    </svg>
+  );
+}
+
+function SearchIcon({
+  white = false,
+}: {
+  white?: boolean;
+}) {
+  return (
+    <svg
+      className={`h-5 w-5 ${
+        white
+          ? "text-white"
+          : "text-gray-400"
+      }`}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+    >
+      <circle
+        cx="11"
+        cy="11"
+        r="7"
+      />
+
+      <path d="m20 20-4-4" />
+    </svg>
+  );
+}
+
+function ImageSearchIcon() {
+  return (
+    <svg
+      className="h-5 w-5"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+    >
+      <rect
+        x="3"
+        y="3"
+        width="18"
+        height="18"
+        rx="3"
+      />
+
+      <circle
+        cx="8.5"
+        cy="8.5"
+        r="1.5"
+      />
+
+      <path d="m3 16 5-5 4 4 2-2 7 7" />
+
+      <circle
+        cx="18"
+        cy="18"
+        r="3"
+        fill="white"
+      />
+
+      <path d="m20.2 20.2 1.5 1.5" />
+    </svg>
+  );
+}
+
+function GiftIcon() {
+  return (
+    <svg
+      className="h-5 w-5 transition group-hover:scale-110"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+    >
+      <path d="M20 12v8a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-8" />
+      <path d="M2 7h20v5H2z" />
+      <path d="M12 7v14" />
+      <path d="M12 7H7.5a2.5 2.5 0 1 1 2.5-2.5C10 6 12 7 12 7Z" />
+      <path d="M12 7h4.5A2.5 2.5 0 1 0 14 4.5C14 6 12 7 12 7Z" />
+    </svg>
+  );
+}
+
+function HeartIcon() {
+  return (
+    <svg
+      className="h-5 w-5 transition group-hover:scale-110"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+    >
+      <path d="M20.8 8.7c0 5.5-8.8 10.3-8.8 10.3S3.2 14.2 3.2 8.7A4.7 4.7 0 0 1 12 6.3a4.7 4.7 0 0 1 8.8 2.4Z" />
+    </svg>
+  );
+}
+
+function UserIcon() {
+  return (
+    <svg
+      className="h-5 w-5 transition group-hover:scale-110"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+    >
+      <circle
+        cx="12"
+        cy="8"
+        r="3.5"
+      />
+
+      <path d="M5 20c.8-3.3 3.2-5 7-5s6.2 1.7 7 5" />
+    </svg>
+  );
+}
+
+function CartIcon() {
+  return (
+    <svg
+      className="h-5 w-5 transition group-hover:scale-110"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+    >
+      <path d="M3 4h2l2.2 11h10.6L21 7H6" />
+
+      <circle
+        cx="9"
+        cy="20"
+        r="1"
+      />
+
+      <circle
+        cx="18"
+        cy="20"
+        r="1"
+      />
+    </svg>
   );
 }

@@ -8,7 +8,7 @@ import { apiFetch, ApiError } from "@/lib/api";
 type AdminCustomer = {
   id: string;
   name: string;
-  email: string;
+  email?: string;
   phone?: string | null;
   createdAt: string;
   _count: {

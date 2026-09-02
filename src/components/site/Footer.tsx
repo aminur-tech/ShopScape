@@ -23,7 +23,7 @@ export function Footer() {
       <div className="container-page grid grid-cols-2 md:grid-cols-4 gap-8 py-10 text-sm">
         <div>
           <p className="text-xl font-bold mb-3">ShopScape</p>
-          <p className="flex items-start gap-1">📞 কল করুনঃ 01327694078 (whatsapp)</p>
+          <p className="flex items-start gap-1">📞 কল করুন 01632370620 (whatsapp)</p>
           <p className="flex items-start gap-1 mt-1">
             📍 ঠিকানাঃ শপ-২৩০, এমজি প্লাজা, মহাম্মদপুর, ঢাকা-১২০৭, বাংলাদেশ
           </p>
