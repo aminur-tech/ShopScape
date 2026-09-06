@@ -20,7 +20,7 @@ export default function MetaPixel() {
   useEffect(() => {
     if (!window.fbq) return;
 
-    window.fbq("track", "Purchase", {value: 0.00, currency: 'USD'});
+    window.fbq("track", "PageView");
   }, [pathname, searchParams]);
 
   if (!PIXEL_ID) {
